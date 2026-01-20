@@ -1,0 +1,192 @@
+// Prisma Schema for Tarsify AI Marketplace
+// Based on INFRA.MD specifications
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CONSUMER MODELS (Firebase Project A users)
+// ============================================
+
+/// Consumer - End users who browse and run AI notebooks
+model Consumer {
+  id             String   @id @default(uuid()) @db.Uuid
+  firebaseUid    String   @unique @map("firebase_uid")
+  email          String   @unique
+  name           String?
+  avatarUrl      String?  @map("avatar_url")
+  creditsBalance Int      @default(0) @map("credits_balance")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  purchases  Purchase[]
+  executions Execution[]
+
+  @@map("consumers")
+}
+
+// ============================================
+// DEVELOPER MODELS (Firebase Project B users)
+// ============================================
+
+/// Developer - Users who create and sell AI notebooks
+model Developer {
+  id              String   @id @default(uuid()) @db.Uuid
+  firebaseUid     String   @unique @map("firebase_uid")
+  email           String   @unique
+  name            String?
+  avatarUrl       String?  @map("avatar_url")
+  earningsBalance Int      @default(0) @map("earnings_balance") // In cents
+  payoutEmail     String?  @map("payout_email")
+  stripeAccountId String?  @map("stripe_account_id")
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  notebooks Notebook[]
+  payouts   Payout[]
+
+  @@map("developers")
+}
+
+// ============================================
+// NOTEBOOK MODELS
+// ============================================
+
+/// GPU types available for notebook execution
+enum GpuType {
+  T4
+  L4
+  A100
+  H100
+}
+
+/// Notebook publication status
+enum NotebookStatus {
+  draft
+  published
+  archived
+}
+
+/// Notebook categories
+enum NotebookCategory {
+  image
+  text
+  video
+  audio
+  other
+}
+
+/// Notebook - AI mini-apps created by developers
+model Notebook {
+  id               String           @id @default(uuid()) @db.Uuid
+  developerId      String           @map("developer_id") @db.Uuid
+  title            String
+  description      String?          @db.Text
+  shortDescription String?          @map("short_description") @db.VarChar(255)
+  thumbnailUrl     String?          @map("thumbnail_url")
+  priceCredits     Int              @map("price_credits")
+  gpuType          GpuType          @map("gpu_type")
+  category         NotebookCategory @default(other)
+  status           NotebookStatus   @default(draft)
+  totalRuns        Int              @default(0) @map("total_runs")
+  averageRating    Decimal?         @map("average_rating") @db.Decimal(3, 2)
+  notebookFileUrl  String?          @map("notebook_file_url")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  developer  Developer   @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  executions Execution[]
+
+  @@index([developerId])
+  @@index([status])
+  @@index([category])
+  @@map("notebooks")
+}
+
+// ============================================
+// TRANSACTION MODELS
+// ============================================
+
+/// Purchase - Credit purchases by consumers
+model Purchase {
+  id              String   @id @default(uuid()) @db.Uuid
+  consumerId      String   @map("consumer_id") @db.Uuid
+  creditsAmount   Int      @map("credits_amount")
+  amountPaid      Int      @map("amount_paid") // In cents
+  stripePaymentId String?  @map("stripe_payment_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  consumer Consumer @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+
+  @@index([consumerId])
+  @@map("purchases")
+}
+
+/// Execution status
+enum ExecutionStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+/// Execution - Notebook runs by consumers
+model Execution {
+  id             String          @id @default(uuid()) @db.Uuid
+  consumerId     String          @map("consumer_id") @db.Uuid
+  notebookId     String          @map("notebook_id") @db.Uuid
+  status         ExecutionStatus @default(pending)
+  gpuUsed        String?         @map("gpu_used")
+  creditsCharged Int             @map("credits_charged")
+  startedAt      DateTime?       @map("started_at")
+  completedAt    DateTime?       @map("completed_at")
+  outputUrl      String?         @map("output_url")
+  errorMessage   String?         @map("error_message") @db.Text
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  consumer Consumer @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([consumerId])
+  @@index([notebookId])
+  @@index([status])
+  @@map("executions")
+}
+
+/// Payout status
+enum PayoutStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+/// Payout - Developer withdrawals
+model Payout {
+  id             String       @id @default(uuid()) @db.Uuid
+  developerId    String       @map("developer_id") @db.Uuid
+  amount         Int // In cents
+  status         PayoutStatus @default(pending)
+  stripePayoutId String?      @map("stripe_payout_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  completedAt    DateTime?    @map("completed_at")
+
+  // Relations
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  @@index([developerId])
+  @@index([status])
+  @@map("payouts")
+}
