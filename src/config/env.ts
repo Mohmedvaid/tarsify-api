@@ -35,6 +35,12 @@ const envSchema = z.object({
   FIREBASE_DEVS_PRIVATE_KEY: z.string().optional(),
   FIREBASE_DEVS_CLIENT_EMAIL: z.string().email().optional(),
 
+  // Firebase Mock mode (for development without credentials)
+  FIREBASE_MOCK: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('false'),
+
   // GCP
   GCP_PROJECT_ID: z.string().optional(),
   GCS_NOTEBOOKS_BUCKET: z.string().optional(),

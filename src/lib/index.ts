@@ -4,3 +4,4 @@
  */
 
 export { logger, createLogger } from './logger';
+export { notebookStorage } from './storage';

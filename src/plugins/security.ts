@@ -7,7 +7,9 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import sensible from '@fastify/sensible';
+import multipart from '@fastify/multipart';
 import { env } from '@/config/env';
+import { notebookStorage } from '@/lib';
 
 /**
  * Register CORS plugin
@@ -58,6 +60,18 @@ async function registerSensible(app: FastifyInstance): Promise<void> {
 }
 
 /**
+ * Register multipart plugin for file uploads
+ */
+async function registerMultipart(app: FastifyInstance): Promise<void> {
+  await app.register(multipart, {
+    limits: {
+      fileSize: notebookStorage.getMaxFileSize(), // 10MB
+      files: 1, // Only 1 file per request
+    },
+  });
+}
+
+/**
  * Register all plugins
  */
 export async function registerPlugins(app: FastifyInstance): Promise<void> {
@@ -65,4 +79,5 @@ export async function registerPlugins(app: FastifyInstance): Promise<void> {
   await registerHelmet(app);
   await registerRateLimit(app);
   await registerSensible(app);
+  await registerMultipart(app);
 }

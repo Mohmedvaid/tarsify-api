@@ -6,6 +6,9 @@ node_modules/
 dist/
 build/
 
+# Uploads (local file storage for MVP)
+uploads/
+
 # Environment files (keep .env.example)
 .env
 .env.local

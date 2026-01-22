@@ -6,6 +6,8 @@ import { env } from './config/env';
 import { APP } from './config/constants';
 import { buildApp } from './app';
 import { logger } from './lib/logger';
+import { db } from './lib/prisma';
+import { firebaseAdmin } from './services/firebase';
 
 /**
  * Graceful shutdown handler
@@ -21,8 +23,8 @@ async function gracefulShutdown(
     await app.close();
     logger.info('Server closed successfully');
 
-    // TODO: Close database connections
-    // await prisma.$disconnect();
+    // Close database connections
+    await db.disconnect();
 
     // TODO: Close other connections (Redis, etc.)
 
@@ -35,12 +37,30 @@ async function gracefulShutdown(
 }
 
 /**
+ * Initialize external services
+ */
+async function initializeServices(): Promise<void> {
+  // Initialize Firebase Admin SDK
+  await firebaseAdmin.initialize();
+
+  // Connect to database (optional - Prisma auto-connects on first query)
+  if (env.DATABASE_URL) {
+    await db.connect();
+  } else {
+    logger.warn('DATABASE_URL not configured - database features disabled');
+  }
+}
+
+/**
  * Start the server
  */
 async function start(): Promise<void> {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
 
   try {
+    // Initialize external services first
+    await initializeServices();
+
     // Build the application
     app = await buildApp();
 

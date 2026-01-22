@@ -1,21 +1,36 @@
 /**
  * Studio Routes (Developer-facing)
- * Placeholder for developer API routes
- * Uses Firebase Project B for authentication
+ * API routes for developer portal
+ * Uses Firebase Project B (tarsify-devs) for authentication
  */
 import type { FastifyInstance } from 'fastify';
+import { authRoutes } from './auth/index';
+import { notebookRoutes } from './notebooks/index';
 
 /**
  * Register studio routes
- * TODO: Implement developer endpoints
+ * All routes are prefixed with /api/studio
  */
 export async function studioRoutes(app: FastifyInstance): Promise<void> {
-  // Placeholder - will be implemented with actual routes
+  // Auth routes: /api/studio/auth/*
+  await app.register(authRoutes, { prefix: '/auth' });
+
+  // Notebook routes: /api/studio/notebooks/*
+  await app.register(notebookRoutes, { prefix: '/notebooks' });
+
+  // Root endpoint for API discovery
   app.get('/', async () => ({
     success: true,
     data: {
-      message: 'Studio API - Coming soon',
+      message: 'Tarsify Studio API',
       version: 'v1',
+      endpoints: {
+        auth: '/auth',
+        notebooks: '/notebooks',
+        analytics: '/analytics',
+        earnings: '/earnings',
+        payouts: '/payouts',
+      },
     },
   }));
 }
