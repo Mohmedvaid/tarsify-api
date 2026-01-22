@@ -9,11 +9,13 @@ import {
   getNotebookHandler,
   getFeaturedNotebooksHandler,
   getCategoriesHandler,
+  searchNotebooksHandler,
 } from './notebooks.controller';
 import {
   notebookCardJsonSchema,
   notebookDetailJsonSchema,
   listNotebooksQueryJsonSchema,
+  searchNotebooksQueryJsonSchema,
 } from './notebooks.schemas';
 
 /**
@@ -116,9 +118,53 @@ export async function marketplaceNotebooksRoutes(app: FastifyInstance): Promise<
           type: 'array',
           items: categoryItemSchema,
         }),
+        500: errorResponseSchema,
       },
     },
     handler: getCategoriesHandler,
+  });
+
+  /**
+   * GET /notebooks/search
+   * Search notebooks by query
+   */
+  app.get('/search', {
+    schema: {
+      description: 'Search notebooks',
+      tags: ['Marketplace Notebooks'],
+      querystring: searchNotebooksQueryJsonSchema,
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', const: true },
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  ...notebookCardJsonSchema.properties,
+                  relevanceScore: { type: 'number' },
+                  matchedFields: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+            meta: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                limit: { type: 'integer' },
+                total: { type: 'integer' },
+                totalPages: { type: 'integer' },
+                query: { type: 'string' },
+              },
+            },
+          },
+        },
+        400: errorResponseSchema,
+      },
+    },
+    handler: searchNotebooksHandler,
   });
 
   /**

@@ -13,6 +13,8 @@ import type {
   ListNotebooksQuery,
   NotebookCardResponse,
   NotebookDetailResponse,
+  SearchNotebooksQuery,
+  SearchResultResponse,
 } from './notebooks.schemas';
 
 type NotebookWithDeveloper = Notebook & {
@@ -258,5 +260,87 @@ export const marketplaceNotebooksService = {
     }));
 
     return { data: categories };
+  },
+
+  /**
+   * Search notebooks (MOCK - returns same results for any query)
+   * In production, this would use a proper search engine like Elasticsearch
+   */
+  async searchNotebooks(query: SearchNotebooksQuery): Promise<{
+    data: SearchResultResponse[];
+    meta: { page: number; limit: number; total: number; totalPages: number; query: string };
+  }> {
+    const { q, category, tier, page = 1, limit = 10 } = query;
+
+    // Map tier to GPU type for filtering
+    const tierToGpuMap: Record<string, string> = {
+      standard: 'T4',
+      fast: 'L4',
+      premium: 'A100',
+      ultra: 'H100',
+    };
+
+    // Build where clause - only published notebooks
+    const where: Record<string, unknown> = {
+      status: 'published',
+    };
+
+    // Category filter
+    if (category) {
+      where.category = category;
+    }
+
+    // Tier (GPU) filter
+    if (tier) {
+      where.gpuType = tierToGpuMap[tier];
+    }
+
+    // MOCK: For now, we just do a simple contains search
+    // In production, use Elasticsearch/Algolia/etc.
+    if (q && q.trim().length > 0) {
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { shortDescription: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    // Get total count
+    const total = await prisma.notebook.count({ where });
+
+    // Get notebooks with relevance sorting (mock - just by runs)
+    const notebooks = await prisma.notebook.findMany({
+      where,
+      include: {
+        developer: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: [{ totalRuns: 'desc' }, { createdAt: 'desc' }],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    // Transform to search results with mock relevance
+    const results: SearchResultResponse[] = notebooks.map((notebook, index) => ({
+      ...toNotebookCardResponse(notebook),
+      relevanceScore: Math.max(0.5, 1 - index * 0.05), // Mock descending relevance
+      matchedFields: ['title', 'description'], // Mock matched fields
+    }));
+
+    return {
+      data: results,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        query: q,
+      },
+    };
   },
 };

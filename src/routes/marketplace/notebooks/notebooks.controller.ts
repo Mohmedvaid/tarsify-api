@@ -10,6 +10,7 @@ import { marketplaceNotebooksService } from './notebooks.service';
 import {
   listNotebooksQuerySchema,
   notebookIdParamsSchema,
+  searchNotebooksQuerySchema,
 } from './notebooks.schemas';
 
 /**
@@ -85,4 +86,33 @@ export async function getCategoriesHandler(
 ): Promise<void> {
   const result = await marketplaceNotebooksService.getCategories();
   createResponse(reply).success(result.data);
+}
+
+/**
+ * GET /notebooks/search
+ * Search notebooks with query
+ */
+export async function searchNotebooksHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  // Validate query params
+  const parseResult = searchNotebooksQuerySchema.safeParse(request.query);
+  if (!parseResult.success) {
+    throw new AppError(
+      ERROR_CODES.VALIDATION_ERROR,
+      'Invalid search parameters',
+      400,
+      { errors: parseResult.error.flatten().fieldErrors }
+    );
+  }
+
+  const result = await marketplaceNotebooksService.searchNotebooks(parseResult.data);
+
+  // Return paginated with extra meta
+  reply.status(200).send({
+    success: true,
+    data: result.data,
+    meta: result.meta,
+  });
 }

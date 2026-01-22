@@ -27,6 +27,19 @@ export const listNotebooksQuerySchema = z.object({
 export type ListNotebooksQuery = z.infer<typeof listNotebooksQuerySchema>;
 
 /**
+ * Search notebooks query params
+ */
+export const searchNotebooksQuerySchema = z.object({
+  q: z.string().min(1, 'Search query is required').max(100, 'Search query too long'),
+  category: z.enum(NOTEBOOK_CATEGORIES).optional(),
+  tier: z.enum(['standard', 'fast', 'premium', 'ultra']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type SearchNotebooksQuery = z.infer<typeof searchNotebooksQuerySchema>;
+
+/**
  * Notebook ID params
  */
 export const notebookIdParamsSchema = z.object({
@@ -132,3 +145,26 @@ export const listNotebooksQueryJsonSchema = {
     maxPrice: { type: 'integer', minimum: 0 },
   },
 } as const;
+
+/**
+ * Search notebooks query JSON schema
+ */
+export const searchNotebooksQueryJsonSchema = {
+  type: 'object',
+  properties: {
+    q: { type: 'string', minLength: 1, maxLength: 100 },
+    category: { type: 'string', enum: [...NOTEBOOK_CATEGORIES] },
+    tier: { type: 'string', enum: ['standard', 'fast', 'premium', 'ultra'] },
+    page: { type: 'integer', minimum: 1, default: 1 },
+    limit: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
+  },
+  required: ['q'],
+} as const;
+
+/**
+ * Search result response with highlights
+ */
+export interface SearchResultResponse extends NotebookCardResponse {
+  relevanceScore: number;
+  matchedFields: string[];
+}

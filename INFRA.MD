@@ -457,59 +457,69 @@ https://api.tarsify.com
 **Public (No Auth)**
 
 ```
-GET  /public/notebooks              # List published notebooks
-GET  /public/notebooks/:id          # Get notebook details
-GET  /public/search?q=              # Search notebooks
-GET  /public/categories             # List categories
+GET  /api/marketplace/notebooks              # List published notebooks (PUBLIC)
+GET  /api/marketplace/notebooks/:id          # Get notebook details (PUBLIC)
+GET  /api/marketplace/notebooks/featured     # Featured notebooks (PUBLIC)
+GET  /api/marketplace/notebooks/categories   # Categories with counts (PUBLIC)
+GET  /api/marketplace/notebooks/search?q=    # Search notebooks (PUBLIC)
+GET  /api/marketplace/credits/packages       # Credit packages (PUBLIC)
 ```
 
-**Consumer (Firebase Project A Auth)**
+**Consumer / Marketplace (Firebase Project A - tarsify-users)**
 
 ```
-GET  /consumer/auth/me              # Get current consumer profile
-POST /consumer/auth/register        # Create consumer record after Firebase signup
-PUT  /consumer/auth/profile         # Update profile
+# Authentication
+POST /api/marketplace/auth/register      # Create consumer record after Firebase signup
+GET  /api/marketplace/auth/me            # Get current consumer profile
+PUT  /api/marketplace/auth/profile       # Update profile
 
-GET  /consumer/credits              # Get credit balance
-POST /consumer/credits/purchase     # Buy credits (Stripe)
+# Credits
+GET  /api/marketplace/credits            # Get credit balance
+POST /api/marketplace/credits/purchase   # Buy credits (mock - will integrate Stripe)
+GET  /api/marketplace/credits/history    # Purchase history
 
-POST /consumer/notebooks/:id/run    # Execute a notebook
-GET  /consumer/executions           # List my executions
-GET  /consumer/executions/:id       # Get execution status/result
-
-GET  /consumer/purchases            # Purchase history
+# Runs (Notebook Execution)
+POST /api/marketplace/notebooks/:id/run  # Execute a notebook (mock)
+GET  /api/marketplace/runs               # List my runs
+GET  /api/marketplace/runs/:id           # Get run status/result
 ```
 
-**Developer (Firebase Project B Auth)**
+**Developer / Studio (Firebase Project B - tarsify-devs)**
 
 ```
-GET  /developer/auth/me             # Get current developer profile
-POST /developer/auth/register       # Create developer record after Firebase signup
-PUT  /developer/auth/profile        # Update profile
-POST /developer/auth/verify         # Submit verification
+# Authentication
+POST /api/studio/auth/register              # Create developer record
+GET  /api/studio/auth/me                    # Get current developer profile
+PUT  /api/studio/auth/profile               # Update profile
+POST /api/studio/auth/complete-profile      # Complete profile setup
 
-GET  /developer/notebooks           # List my notebooks
-POST /developer/notebooks           # Create notebook
-GET  /developer/notebooks/:id       # Get notebook details
-PUT  /developer/notebooks/:id       # Update notebook
-DELETE /developer/notebooks/:id     # Delete notebook
-POST /developer/notebooks/:id/publish  # Publish notebook
+# Notebooks
+GET    /api/studio/notebooks                # List my notebooks
+POST   /api/studio/notebooks                # Create notebook (metadata)
+GET    /api/studio/notebooks/:id            # Get notebook details
+PUT    /api/studio/notebooks/:id            # Update notebook metadata
+DELETE /api/studio/notebooks/:id            # Delete notebook
 
-GET  /developer/analytics           # Overall stats
-GET  /developer/analytics/:id       # Notebook-specific stats
+# Notebook File Operations
+POST   /api/studio/notebooks/:id/file       # Upload .ipynb file
+GET    /api/studio/notebooks/:id/file       # Download .ipynb file
+DELETE /api/studio/notebooks/:id/file       # Remove file
 
-GET  /developer/earnings            # Earnings summary
-GET  /developer/earnings/history    # Earnings history
+# Publishing
+POST /api/studio/notebooks/:id/publish      # Publish notebook
+POST /api/studio/notebooks/:id/unpublish    # Unpublish notebook
 
-GET  /developer/payouts             # Payout history
-POST /developer/payouts/request     # Request payout
+# Coming Soon
+GET  /api/studio/analytics                  # Overall stats
+GET  /api/studio/earnings                   # Earnings summary
+POST /api/studio/payouts/request            # Request payout
 ```
 
 **Webhooks**
 
 ```
-POST /webhooks/stripe               # Stripe payment events
-POST /webhooks/runpod               # GPU job completion
+POST /webhooks/stripe               # Stripe payment events (planned)
+POST /webhooks/runpod               # GPU job completion (planned)
 ```
 
 ---
