@@ -1,21 +1,45 @@
 /**
  * Marketplace Routes (Consumer-facing)
- * Placeholder for consumer API routes
- * Uses Firebase Project A for authentication
+ * API routes for consumers to browse and run notebooks
+ * Uses Firebase Project A (tarsify-users) for authentication
  */
 import type { FastifyInstance } from 'fastify';
+import { consumerAuthRoutes } from './auth';
+import { marketplaceNotebooksRoutes } from './notebooks';
+import { runsRoutes, notebookRunRoutes } from './runs';
+import { creditsRoutes } from './credits';
 
 /**
  * Register marketplace routes
- * TODO: Implement consumer endpoints
  */
 export async function marketplaceRoutes(app: FastifyInstance): Promise<void> {
-  // Placeholder - will be implemented with actual routes
+  // Auth routes - /api/marketplace/auth/*
+  await app.register(consumerAuthRoutes, { prefix: '/auth' });
+
+  // Notebook routes - /api/marketplace/notebooks/* (mostly PUBLIC)
+  await app.register(marketplaceNotebooksRoutes, { prefix: '/notebooks' });
+
+  // Notebook run endpoint - /api/marketplace/notebooks/:id/run (AUTH required)
+  await app.register(notebookRunRoutes, { prefix: '/notebooks' });
+
+  // Runs routes - /api/marketplace/runs/* (AUTH required)
+  await app.register(runsRoutes, { prefix: '/runs' });
+
+  // Credits routes - /api/marketplace/credits/* (AUTH required for most)
+  await app.register(creditsRoutes, { prefix: '/credits' });
+
+  // Root endpoint - API info
   app.get('/', async () => ({
     success: true,
     data: {
-      message: 'Marketplace API - Coming soon',
+      message: 'Tarsify Marketplace API',
       version: 'v1',
+      endpoints: {
+        auth: '/auth - Authentication (register, login, profile)',
+        notebooks: '/notebooks - Browse notebooks (public)',
+        runs: '/runs - Your execution history',
+        credits: '/credits - Credit balance and purchases',
+      },
     },
   }));
 }

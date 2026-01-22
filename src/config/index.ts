@@ -38,3 +38,20 @@ export type {
   PayoutStatus,
   NotebookCategory,
 } from './constants';
+
+// Consumer display configuration
+export {
+  COMPUTE_TIERS,
+  CATEGORIES,
+  EXECUTION_DISPLAY,
+  CREDIT_PRICING,
+  DISPLAY_LABELS,
+  getComputeTierDisplay,
+  getComputeTierInfo,
+  getCategoryDisplay,
+  getCategoryInfo,
+  getExecutionStatusDisplay,
+  formatCredits,
+} from './consumer';
+
+export type { ComputeTierKey, CategoryKey, ExecutionStatusKey } from './consumer';
