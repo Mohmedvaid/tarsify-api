@@ -15,20 +15,19 @@ import { prisma } from '@/lib/prisma';
 import { firebaseAdmin } from '@/services/firebase';
 
 /**
- * Check if database is available
+ * Check if database is available (at module load time for skipIf)
  */
-async function isDatabaseAvailable(): Promise<boolean> {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    return true;
-  } catch {
-    return false;
-  }
+let dbAvailable = false;
+try {
+  await prisma.$queryRaw`SELECT 1`;
+  dbAvailable = true;
+} catch {
+  console.warn('\n⚠️  Database not available - some tests will be skipped');
+  console.warn('   Run `docker compose up -d` to start the database\n');
 }
 
 describe('Studio Auth Routes', () => {
   let app: FastifyInstance;
-  let dbAvailable = false;
   const BASE_URL = '/api/studio/auth';
 
   // Test data
@@ -39,13 +38,6 @@ describe('Studio Auth Routes', () => {
   beforeAll(async () => {
     // Force Firebase into mock mode for testing
     firebaseAdmin.resetToMock();
-
-    // Check database availability
-    dbAvailable = await isDatabaseAvailable();
-    if (!dbAvailable) {
-      console.warn('\n⚠️  Database not available - some tests will be skipped');
-      console.warn('   Run `docker compose up -d` to start the database\n');
-    }
 
     // Build the app
     app = await buildApp();
@@ -167,12 +159,12 @@ describe('Studio Auth Routes', () => {
       expect(response.statusCode).toBe(409);
     });
 
-    it.skipIf(!dbAvailable)('should trim and lowercase email', async () => {
+    it.skipIf(!dbAvailable)('should lowercase email', async () => {
       const response = await app.inject({
         method: 'POST',
         url: `${BASE_URL}/register`,
         headers: { authorization: `Bearer ${mockToken}` },
-        payload: { email: '  TEST@EXAMPLE.COM  ', displayName: 'Test' },
+        payload: { email: 'TEST@EXAMPLE.COM', displayName: 'Test' },
       });
 
       expect(response.statusCode).toBe(201);

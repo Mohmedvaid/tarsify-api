@@ -33,6 +33,11 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 10000,
     hookTimeout: 10000,
+    // Load .env file
+    env: {
+      NODE_ENV: 'test',
+      FIREBASE_MOCK: 'true',
+    },
   },
   esbuild: {
     target: 'node20',
