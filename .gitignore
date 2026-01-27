@@ -72,3 +72,6 @@ firebase-adminsdk*.json
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# keys
+tarsify-studio-firebase-adminsdk-fbsvc-93d481d434.json
