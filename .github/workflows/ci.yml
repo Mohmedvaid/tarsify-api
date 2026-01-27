@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -168,7 +168,7 @@ jobs:
     needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: dev
-    
+
     steps:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -212,7 +212,7 @@ jobs:
         run: |
           URL="${{ steps.deploy.outputs.url }}"
           echo "🔍 Testing deployment at: $URL"
-          
+
           # Health check
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/health")
           if [ "$HTTP_STATUS" != "200" ]; then
@@ -220,7 +220,7 @@ jobs:
             exit 1
           fi
           echo "✅ Health check passed"
-          
+
           # Ready check
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/health/ready")
           if [ "$HTTP_STATUS" != "200" ]; then
@@ -228,7 +228,7 @@ jobs:
             exit 1
           fi
           echo "✅ Ready check passed"
-          
+
           echo "🚀 Deployment successful!"
           echo "🌐 URL: $URL"
 

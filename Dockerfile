@@ -11,7 +11,7 @@ COPY prisma ./prisma/
 
 # Install dependencies (production only)
 RUN npm ci --only=production && \
-    npx prisma generate
+  npx prisma generate
 
 # ============================================
 # Stage 2: Builder
@@ -42,7 +42,7 @@ WORKDIR /app
 
 # Add non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 tarsify
+  adduser --system --uid 1001 tarsify
 
 # Copy built assets
 COPY --from=deps /app/node_modules ./node_modules
