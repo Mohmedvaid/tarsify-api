@@ -1,7 +1,25 @@
 # Tarsify API Documentation
 
 > Version: 1.0.0  
-> Base URL: `https://api.tarsify.com` (prod) | `http://localhost:8080` (dev)
+> Base URL: `https://api.tarsify.com` (prod) | `http://localhost:8080` (dev)  
+> Last Updated: January 27, 2026
+
+---
+
+## Implementation Status
+
+| Section                 | Status         |
+| ----------------------- | -------------- |
+| Studio Auth             | ✅ Implemented |
+| Studio Notebooks        | ✅ Implemented |
+| Studio Analytics        | 🔮 Future      |
+| Studio Earnings/Payouts | 🔮 Future      |
+| Marketplace Auth        | ⏳ Phase 4     |
+| Marketplace Notebooks   | ⏳ Phase 4     |
+| Marketplace Runs        | ⏳ Phase 4     |
+| Marketplace Credits     | ⏳ Phase 4     |
+
+> **Legend:** ✅ Implemented | ⏳ Planned | 🔮 Future
 
 ---
 
@@ -11,12 +29,13 @@
 2. [Response Format](#response-format)
 3. [Error Codes](#error-codes)
 4. [Rate Limiting](#rate-limiting)
-5. [Studio API (Developer)](#studio-api-developer)
-   - [Auth Endpoints](#auth-endpoints)
-   - [Notebook Endpoints](#notebook-endpoints)
-   - [Analytics Endpoints](#analytics-endpoints)
-   - [Earnings Endpoints](#earnings-endpoints)
-   - [Payout Endpoints](#payout-endpoints)
+5. [Studio API (Developer)](#studio-api-developer) ✅
+   - [Auth Endpoints](#auth-endpoints) ✅
+   - [Notebook Endpoints](#notebook-endpoints) ✅
+   - [Analytics Endpoints](#analytics-endpoints) 🔮
+   - [Earnings Endpoints](#earnings-endpoints) 🔮
+   - [Payout Endpoints](#payout-endpoints) 🔮
+6. [Marketplace API (Consumer)](#marketplace-api-consumer) ⏳
 
 ---
 
@@ -34,18 +53,8 @@ Authorization: Bearer <firebase-jwt-token>
 
 | User Type | Firebase Project | Route Prefix         | Domain             |
 | --------- | ---------------- | -------------------- | ------------------ |
-| Developer | `tarsify-devs`   | `/api/studio/*`      | studio.tarsify.com |
+| Developer | `tarsify-studio` | `/api/studio/*`      | studio.tarsify.com |
 | Consumer  | `tarsify-users`  | `/api/marketplace/*` | tarsify.com        |
-
-### Development Mode (Mock Auth)
-
-When `FIREBASE_MOCK=true`, use any token format:
-
-```
-Authorization: Bearer dev_<firebase_uid>
-```
-
-Example: `Bearer dev_test123` → `firebase_uid = test123`
 
 ---
 

@@ -117,55 +117,15 @@ The API will be available at `http://localhost:8080`
 | `pnpm db:push`       | Push schema to database (dev)            |
 | `pnpm db:studio`     | Open Prisma Studio                       |
 
-## API Endpoints
+## Documentation
 
-### Health Checks
+| Document                           | Purpose                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| [API.md](./API.md)                 | Full API reference (endpoints, schemas, errors) |
+| [DEVELOPMENT.md](./DEVELOPMENT.md) | Development roadmap, progress tracking          |
+| [INFRA.MD](./INFRA.MD)             | Architecture, GCP services, database schema     |
 
-| Method | Path            | Description                           |
-| ------ | --------------- | ------------------------------------- |
-| GET    | `/health`       | Basic health check                    |
-| GET    | `/health/ready` | Readiness probe (checks dependencies) |
-| GET    | `/health/live`  | Liveness probe                        |
-
-### Public (No Auth)
-
-| Method | Path                        | Description              |
-| ------ | --------------------------- | ------------------------ |
-| GET    | `/api/public/notebooks`     | List published notebooks |
-| GET    | `/api/public/notebooks/:id` | Get notebook details     |
-| GET    | `/api/public/search`        | Search notebooks         |
-| GET    | `/api/public/categories`    | List categories          |
-
-### Marketplace (Consumer Auth - tarsify-users Firebase)
-
-| Method | Path                                    | Description             |
-| ------ | --------------------------------------- | ----------------------- |
-| POST   | `/api/marketplace/auth/register`        | Create consumer account |
-| GET    | `/api/marketplace/auth/me`              | Get current profile     |
-| PUT    | `/api/marketplace/auth/profile`         | Update profile          |
-| GET    | `/api/marketplace/notebooks`            | Browse notebooks        |
-| GET    | `/api/marketplace/notebooks/:id`        | Get notebook details    |
-| GET    | `/api/marketplace/notebooks/featured`   | Featured notebooks      |
-| GET    | `/api/marketplace/notebooks/categories` | Categories with counts  |
-| GET    | `/api/marketplace/notebooks/search`     | Search notebooks        |
-| POST   | `/api/marketplace/notebooks/:id/run`    | Run notebook (mock)     |
-| GET    | `/api/marketplace/runs`                 | List your runs          |
-| GET    | `/api/marketplace/runs/:id`             | Get run details         |
-| GET    | `/api/marketplace/credits`              | Get credit balance      |
-| GET    | `/api/marketplace/credits/packages`     | Available packages      |
-| POST   | `/api/marketplace/credits/purchase`     | Buy credits (mock)      |
-| GET    | `/api/marketplace/credits/history`      | Purchase history        |
-
-### Studio (Developer Auth - tarsify-devs Firebase)
-
-| Method | Path                          | Description         |
-| ------ | ----------------------------- | ------------------- |
-| GET    | `/api/studio/auth/me`         | Get current profile |
-| POST   | `/api/studio/auth/register`   | Create account      |
-| GET    | `/api/studio/notebooks`       | List my notebooks   |
-| POST   | `/api/studio/notebooks`       | Create notebook     |
-| GET    | `/api/studio/earnings`        | Get earnings        |
-| POST   | `/api/studio/payouts/request` | Request payout      |
+## Configuration
 
 ## Configuration
 
