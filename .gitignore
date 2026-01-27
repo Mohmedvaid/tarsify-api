@@ -62,6 +62,8 @@ temp/
 *-credentials.json
 service-account*.json
 firebase-adminsdk*.json
+firebase-service-account.json
+*-firebase-*.json
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

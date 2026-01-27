@@ -3,12 +3,47 @@
  * Handles Firebase authentication for both user types
  * Supports mock mode for development
  */
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
 import { env } from '@/config/env';
 import { logger } from '@/lib/logger';
 import type { FirebaseUser, FirebaseProject } from './types';
 import { firebaseMock } from './mock';
+
+/**
+ * Load service account from env vars
+ */
+function loadServiceAccount(
+  projectIdEnv: string | undefined,
+  privateKeyEnv: string | undefined,
+  clientEmailEnv: string | undefined
+): admin.ServiceAccount | null {
+  if (!projectIdEnv || !privateKeyEnv || !clientEmailEnv) {
+    return null;
+  }
+
+  // Skip if using placeholder values
+  if (privateKeyEnv.includes('...') || privateKeyEnv.length < 500) {
+    return null;
+  }
+
+  const privateKey = privateKeyEnv;
+  
+  // Debug: Log key format info (not the actual key!)
+  logger.debug({
+    hasBeginMarker: privateKey.includes('-----BEGIN PRIVATE KEY-----'),
+    hasEndMarker: privateKey.includes('-----END PRIVATE KEY-----'),
+    hasNewlines: privateKey.includes('\n'),
+    newlineCount: (privateKey.match(/\n/g) || []).length,
+    keyLength: privateKey.length,
+  }, 'Private key format check');
+
+  return {
+    projectId: projectIdEnv,
+    privateKey,
+    clientEmail: clientEmailEnv,
+  };
+}
 
 /**
  * Check if mock mode is enabled
@@ -74,7 +109,9 @@ class FirebaseAdminService {
       logger.info('Firebase Admin SDK initialized successfully');
       this.initialized = true;
     } catch (error) {
-      logger.error({ error }, 'Failed to initialize Firebase Admin SDK');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error({ errorMessage, errorStack }, 'Failed to initialize Firebase Admin SDK');
       throw error;
     }
   }
@@ -83,19 +120,17 @@ class FirebaseAdminService {
    * Initialize Firebase apps for both projects
    */
   private async initializeApps(): Promise<void> {
-    // Initialize Users app (tarsify-users) - only if credentials provided
-    if (
-      env.FIREBASE_USERS_PROJECT_ID &&
-      env.FIREBASE_USERS_PRIVATE_KEY &&
+    // Initialize Users app (tarsify-users)
+    const usersServiceAccount = loadServiceAccount(
+      env.FIREBASE_USERS_PROJECT_ID,
+      env.FIREBASE_USERS_PRIVATE_KEY,
       env.FIREBASE_USERS_CLIENT_EMAIL
-    ) {
+    );
+
+    if (usersServiceAccount) {
       this.usersApp = admin.initializeApp(
         {
-          credential: admin.credential.cert({
-            projectId: env.FIREBASE_USERS_PROJECT_ID,
-            privateKey: env.FIREBASE_USERS_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            clientEmail: env.FIREBASE_USERS_CLIENT_EMAIL,
-          }),
+          credential: admin.credential.cert(usersServiceAccount),
         },
         'users'
       );
@@ -104,19 +139,22 @@ class FirebaseAdminService {
       logger.warn('Firebase Users credentials not configured');
     }
 
-    // Initialize Devs app (tarsify-devs) - only if credentials provided
-    if (
-      env.FIREBASE_DEVS_PROJECT_ID &&
-      env.FIREBASE_DEVS_PRIVATE_KEY &&
+    // Initialize Devs app (tarsify-devs)
+    const devsServiceAccount = loadServiceAccount(
+      env.FIREBASE_DEVS_PROJECT_ID,
+      env.FIREBASE_DEVS_PRIVATE_KEY,
       env.FIREBASE_DEVS_CLIENT_EMAIL
-    ) {
+    );
+
+    if (devsServiceAccount) {
+      logger.debug({
+        projectId: devsServiceAccount.projectId,
+        clientEmail: devsServiceAccount.clientEmail,
+      }, 'Attempting to initialize Firebase Devs app');
+
       this.devsApp = admin.initializeApp(
         {
-          credential: admin.credential.cert({
-            projectId: env.FIREBASE_DEVS_PROJECT_ID,
-            privateKey: env.FIREBASE_DEVS_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            clientEmail: env.FIREBASE_DEVS_CLIENT_EMAIL,
-          }),
+          credential: admin.credential.cert(devsServiceAccount),
         },
         'devs'
       );
