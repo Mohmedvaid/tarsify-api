@@ -28,7 +28,9 @@ function loadServiceAccount(
     return null;
   }
 
-  const privateKey = privateKeyEnv;
+  // Handle escaped newlines from Secret Manager or env files
+  // The key may have literal "\n" strings that need to be converted to actual newlines
+  const privateKey = privateKeyEnv.replace(/\\n/g, '\n');
   
   // Debug: Log key format info (not the actual key!)
   logger.debug({
