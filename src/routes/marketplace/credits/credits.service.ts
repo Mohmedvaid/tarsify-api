@@ -5,7 +5,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import type { Consumer, Purchase } from '@prisma/client';
-import { purchaseRepository, consumerRepository } from '@/repositories';
+import { purchaseRepository } from '@/repositories';
 import { CREDIT_PRICING, formatCredits } from '@/config/consumer';
 import { PAGINATION } from '@/config/constants';
 import { logger } from '@/lib/logger';

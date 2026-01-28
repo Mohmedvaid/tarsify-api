@@ -7,8 +7,6 @@
  */
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { buildApp } from '@/app';
 import { firebaseAdmin } from '@/services/firebase';
 import { prisma } from '@/lib/prisma';

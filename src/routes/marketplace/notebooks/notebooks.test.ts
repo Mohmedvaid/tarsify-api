@@ -4,7 +4,7 @@
  * 
  * These are PUBLIC endpoints - no auth required
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '@/app';
 import { prisma } from '@/lib/prisma';

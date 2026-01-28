@@ -2,7 +2,7 @@
  * Consumer Auth Service
  * Business logic for consumer authentication
  */
-import { consumerRepository, isConsumerProfileComplete } from '@/repositories';
+import { consumerRepository } from '@/repositories';
 import type { Consumer } from '@prisma/client';
 import type { FirebaseUser } from '@/services/firebase';
 import { AppError } from '@/core/errors';

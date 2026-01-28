@@ -6,7 +6,6 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { logger } from './logger';
-import { config } from '@/config';
 
 // Storage directory for notebooks
 const NOTEBOOKS_DIR = path.join(process.cwd(), 'uploads', 'notebooks');

@@ -2,7 +2,7 @@
  * Notebook Repository Types
  * Type definitions for notebook database operations
  */
-import type { Notebook, NotebookStatus, GpuType, NotebookCategory, Prisma } from '@prisma/client';
+import type { Notebook, NotebookStatus, GpuType, NotebookCategory } from '@prisma/client';
 
 /**
  * Notebook list filters

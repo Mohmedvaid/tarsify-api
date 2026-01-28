@@ -4,10 +4,9 @@
  * MVP: Mock execution that simulates notebook runs
  */
 import { prisma } from '@/lib/prisma';
-import type { Consumer, Execution } from '@prisma/client';
+import type { Consumer } from '@prisma/client';
 import {
   executionRepository,
-  consumerRepository,
   type ExecutionWithNotebook,
 } from '@/repositories';
 import {
