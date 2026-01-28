@@ -105,7 +105,7 @@ export const consumerAuthService = {
       firebaseUid: firebaseUser.uid,
       email,
       name,
-      avatarUrl: firebaseUser.picture || null,
+      avatarUrl: firebaseUser.photoURL || undefined,
     });
 
     logger.info(
@@ -144,13 +144,13 @@ export const consumerAuthService = {
     input: UpdateProfileInput
   ): Promise<{ data: ProfileUpdateResponse }> {
     // Only update fields that are provided
-    const updateData: { name?: string; avatarUrl?: string | null } = {};
+    const updateData: { name?: string; avatarUrl?: string } = {};
 
     if (input.name !== undefined) {
       updateData.name = input.name;
     }
     if (input.avatarUrl !== undefined) {
-      updateData.avatarUrl = input.avatarUrl;
+      updateData.avatarUrl = input.avatarUrl ?? undefined;
     }
 
     // Update consumer

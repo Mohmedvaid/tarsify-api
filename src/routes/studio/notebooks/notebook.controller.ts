@@ -14,7 +14,7 @@
  * - POST /notebooks/:id/unpublish - Unpublish notebook
  */
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import type { AuthenticatedDeveloperRequest } from '@/core/middleware/auth/types';
+import type { DeveloperRequest } from '@/core/middleware/auth/types';
 import { createResponse } from '@/core/responses';
 import { AppError } from '@/core/errors/AppError';
 import { ERROR_CODES } from '@/core/errors/errorCodes';
@@ -33,7 +33,7 @@ export async function createNotebookHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate request body
   const parseResult = createNotebookSchema.safeParse(request.body);
@@ -62,7 +62,7 @@ export async function listNotebooksHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate query params
   const parseResult = listNotebooksQuerySchema.safeParse(request.query);
@@ -95,7 +95,7 @@ export async function getNotebookHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -124,7 +124,7 @@ export async function deleteNotebookHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -157,7 +157,7 @@ export async function uploadNotebookFileHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -206,7 +206,7 @@ export async function downloadNotebookFileHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -238,7 +238,7 @@ export async function deleteNotebookFileHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -271,7 +271,7 @@ export async function publishNotebookHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);
@@ -300,7 +300,7 @@ export async function unpublishNotebookHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const { developer } = request as AuthenticatedDeveloperRequest;
+  const { developer } = request as DeveloperRequest;
 
   // Validate path params
   const parseResult = notebookParamsSchema.safeParse(request.params);

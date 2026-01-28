@@ -5,6 +5,7 @@
  */
 import admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
+import { deleteApp } from 'firebase-admin/app';
 import { env } from '@/config/env';
 import { logger } from '@/lib/logger';
 import type { FirebaseUser, FirebaseProject } from './types';
@@ -219,11 +220,11 @@ class FirebaseAdminService {
    */
   async cleanup(): Promise<void> {
     if (this.usersApp) {
-      await admin.deleteApp(this.usersApp);
+      await deleteApp(this.usersApp);
       this.usersApp = null;
     }
     if (this.devsApp) {
-      await admin.deleteApp(this.devsApp);
+      await deleteApp(this.devsApp);
       this.devsApp = null;
     }
     this.mockMode = false;

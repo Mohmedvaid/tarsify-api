@@ -6,7 +6,7 @@
  */
 import pino from 'pino';
 import type { LoggerOptions } from 'pino';
-import { env, isDev, isProd } from '@/config/env';
+import { isDev, isProd } from '@/config/env';
 
 /**
  * Determine log level based on environment
@@ -17,7 +17,7 @@ import { env, isDev, isProd } from '@/config/env';
 function getLogLevel(): string {
   // If LOG_LEVEL is explicitly set, respect it
   if (process.env.LOG_LEVEL) {
-    return env.LOG_LEVEL;
+    return process.env.LOG_LEVEL;
   }
 
   // Default levels by environment
