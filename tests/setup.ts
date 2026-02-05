@@ -17,6 +17,7 @@ process.env.CORS_ORIGINS = 'http://localhost:3000';
 process.env.RATE_LIMIT_MAX = '1000';
 process.env.RATE_LIMIT_WINDOW_MS = '60000';
 process.env.FIREBASE_MOCK = 'true'; // Always use mock Firebase in tests
+process.env.GCS_NOTEBOOKS_BUCKET = 'test-notebooks-bucket'; // Mock bucket for tests
 
 // Global test setup
 beforeAll(() => {

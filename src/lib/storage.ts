@@ -1,24 +1,29 @@
 /**
  * Google Cloud Storage for Notebooks
  * Uses GCS for all environments (local dev + production)
+ * In test environment, uses mock implementations
  */
 import { Storage } from '@google-cloud/storage';
-import { env } from '../config/env';
+import { env, isTest } from '../config/env';
 import { logger } from './logger';
 
-// Initialize GCS client
+// Initialize GCS client (skip in test environment)
 // In production (Cloud Run), uses default credentials via Workload Identity
 // In local dev, uses GOOGLE_APPLICATION_CREDENTIALS env var pointing to service account JSON
-const storage = new Storage({
-  projectId: env.GCP_PROJECT_ID,
-});
+const storage = isTest
+  ? null
+  : new Storage({
+      projectId: env.GCP_PROJECT_ID,
+    });
 
-const bucket = storage.bucket(env.GCS_NOTEBOOKS_BUCKET);
+const bucket = isTest ? null : storage!.bucket(env.GCS_NOTEBOOKS_BUCKET);
 
-logger.info(
-  { bucket: env.GCS_NOTEBOOKS_BUCKET },
-  'GCS notebook storage initialized'
-);
+if (!isTest) {
+  logger.info(
+    { bucket: env.GCS_NOTEBOOKS_BUCKET },
+    'GCS notebook storage initialized'
+  );
+}
 
 /**
  * Storage service for notebook files
@@ -42,6 +47,9 @@ export const notebookStorage = {
    * Check if a notebook file exists
    */
   async exists(notebookId: string): Promise<boolean> {
+    if (isTest || !bucket) {
+      return false; // Mock: file doesn't exist in tests
+    }
     try {
       const file = bucket.file(this.getFilePath(notebookId));
       const [exists] = await file.exists();
@@ -59,6 +67,12 @@ export const notebookStorage = {
    * @returns The GCS URI for storing in DB
    */
   async saveNotebook(notebookId: string, content: Buffer): Promise<string> {
+    const gcsUri = this.getGcsUri(notebookId);
+
+    if (isTest || !bucket) {
+      return gcsUri; // Mock: return URI without actual upload
+    }
+
     const filePath = this.getFilePath(notebookId);
     const file = bucket.file(filePath);
 
@@ -70,7 +84,6 @@ export const notebookStorage = {
         },
       });
 
-      const gcsUri = this.getGcsUri(notebookId);
       logger.info({ notebookId, gcsUri }, 'Notebook file saved to GCS');
 
       return gcsUri;
@@ -86,6 +99,16 @@ export const notebookStorage = {
    * @returns The file content as Buffer
    */
   async readNotebook(notebookId: string): Promise<Buffer> {
+    if (isTest || !bucket) {
+      // Mock: return empty notebook structure for tests
+      return Buffer.from(JSON.stringify({
+        cells: [],
+        metadata: {},
+        nbformat: 4,
+        nbformat_minor: 4,
+      }));
+    }
+
     const file = bucket.file(this.getFilePath(notebookId));
 
     try {
@@ -102,6 +125,10 @@ export const notebookStorage = {
    * @param notebookId - The notebook ID
    */
   async deleteNotebook(notebookId: string): Promise<void> {
+    if (isTest || !bucket) {
+      return; // Mock: do nothing in tests
+    }
+
     const file = bucket.file(this.getFilePath(notebookId));
 
     try {
@@ -130,6 +157,11 @@ export const notebookStorage = {
     notebookId: string,
     expiresInMinutes = 15
   ): Promise<string> {
+    if (isTest || !bucket) {
+      // Mock: return fake signed URL in tests
+      return `https://storage.googleapis.com/${env.GCS_NOTEBOOKS_BUCKET}/${this.getFilePath(notebookId)}?mock=true`;
+    }
+
     const file = bucket.file(this.getFilePath(notebookId));
 
     try {

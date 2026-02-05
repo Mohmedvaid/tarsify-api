@@ -38,19 +38,19 @@ Similar to Amazon Marketplace but for AI applications, with simpler UX than Hugg
 
 ## Tech Stack
 
-| Layer                    | Technology                 | Purpose                           |
-| ------------------------ | -------------------------- | --------------------------------- |
-| **Frontend (Consumer)**  | Next.js + TypeScript       | SSR for SEO, consumer marketplace |
-| **Frontend (Developer)** | Next.js + TypeScript       | SSR for SEO, developer studio     |
-| **Backend**              | Node.js + TypeScript       | Central API for both platforms    |
-| **Database**             | PostgreSQL (Cloud SQL)     | Primary data store                |
-| **Authentication**       | Firebase Auth (2 projects) | Separate user pools               |
-| **File Storage**         | GCS (`tarsify-studio-notebooks`) | Notebooks stored in GCS bucket |
-| **Hosting**              | Cloud Run                  | All 3 services (scale to zero)    |
-| **DNS**                  | Cloud DNS                  | Domain management                 |
-| **Secrets**              | Secret Manager             | API keys, credentials             |
-| **Container Registry**   | Artifact Registry          | Docker images                     |
-| **CI/CD**                | Cloud Build                | Automated deployments             |
+| Layer                    | Technology                       | Purpose                           |
+| ------------------------ | -------------------------------- | --------------------------------- |
+| **Frontend (Consumer)**  | Next.js + TypeScript             | SSR for SEO, consumer marketplace |
+| **Frontend (Developer)** | Next.js + TypeScript             | SSR for SEO, developer studio     |
+| **Backend**              | Node.js + TypeScript             | Central API for both platforms    |
+| **Database**             | PostgreSQL (Cloud SQL)           | Primary data store                |
+| **Authentication**       | Firebase Auth (2 projects)       | Separate user pools               |
+| **File Storage**         | GCS (`tarsify-studio-notebooks`) | Notebooks stored in GCS bucket    |
+| **Hosting**              | Cloud Run                        | All 3 services (scale to zero)    |
+| **DNS**                  | Cloud DNS                        | Domain management                 |
+| **Secrets**              | Secret Manager                   | API keys, credentials             |
+| **Container Registry**   | Artifact Registry                | Docker images                     |
+| **CI/CD**                | Cloud Build                      | Automated deployments             |
 
 ---
 
@@ -717,10 +717,10 @@ Timeout:              60s        # Reasonable default
 
 #### Storage Security Model
 
-| Environment | Authentication Method |
-|-------------|----------------------|
+| Environment | Authentication Method                                         |
+| ----------- | ------------------------------------------------------------- |
 | Local Dev   | Service account JSON key (`secrets/gcs-service-account.json`) |
-| Cloud Run   | Workload Identity (attach service account to Cloud Run) |
+| Cloud Run   | Workload Identity (attach service account to Cloud Run)       |
 
 The service account only has access to the notebooks bucket, not project-wide permissions.
 
