@@ -56,6 +56,7 @@ tarsify-api/
 - Node.js 20+
 - pnpm 9+
 - Docker (for local PostgreSQL)
+- GCP service account key for Cloud Storage (see below)
 
 ### Setup
 
@@ -78,19 +79,32 @@ tarsify-api/
    # Edit .env with your values
    ```
 
-4. **Generate Prisma client:**
+4. **Set up GCS access (for notebook storage):**
+
+   The API uses Google Cloud Storage for notebook files. You need a service account key:
+
+   ```bash
+   # Place your service account key in secrets/
+   mkdir -p secrets
+   # Copy the key file (get from team lead or GCP console)
+   cp /path/to/gcs-service-account.json secrets/gcs-service-account.json
+   ```
+
+   The key should be for `tarsify-api-storage@tarsify-studio.iam.gserviceaccount.com` service account.
+
+5. **Generate Prisma client:**
 
    ```bash
    pnpm db:generate
    ```
 
-5. **Run migrations:**
+6. **Run migrations:**
 
    ```bash
    pnpm db:migrate
    ```
 
-6. **Start development server:**
+7. **Start development server:**
    ```bash
    pnpm dev
    ```
@@ -204,6 +218,13 @@ gcloud run deploy tarsify-api --source .
 - Type-safe database queries
 - Excellent migration system
 - Great developer experience
+
+### Why Google Cloud Storage?
+
+- Cloud Run containers are ephemeral (no local storage persistence)
+- Same storage used in local dev and production (no surprises)
+- Service account with bucket-only permissions (least privilege)
+- Signed URLs for secure, time-limited file access
 
 ---
 

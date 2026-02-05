@@ -1,30 +1,41 @@
 /**
- * Local File Storage
- * Simple local file storage for MVP. Will be replaced with blob storage later.
+ * Google Cloud Storage for Notebooks
+ * Uses GCS for all environments (local dev + production)
  */
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { Storage } from '@google-cloud/storage';
+import { env } from '../config/env';
 import { logger } from './logger';
 
-// Storage directory for notebooks
-const NOTEBOOKS_DIR = path.join(process.cwd(), 'uploads', 'notebooks');
+// Initialize GCS client
+// In production (Cloud Run), uses default credentials via Workload Identity
+// In local dev, uses GOOGLE_APPLICATION_CREDENTIALS env var pointing to service account JSON
+const storage = new Storage({
+  projectId: env.GCP_PROJECT_ID,
+});
 
-// Ensure upload directory exists
-if (!existsSync(NOTEBOOKS_DIR)) {
-  mkdirSync(NOTEBOOKS_DIR, { recursive: true });
-  logger.info({ dir: NOTEBOOKS_DIR }, 'Created notebooks upload directory');
-}
+const bucket = storage.bucket(env.GCS_NOTEBOOKS_BUCKET);
+
+logger.info(
+  { bucket: env.GCS_NOTEBOOKS_BUCKET },
+  'GCS notebook storage initialized'
+);
 
 /**
  * Storage service for notebook files
  */
 export const notebookStorage = {
   /**
-   * Get the file path for a notebook
+   * Get the GCS path for a notebook
    */
   getFilePath(notebookId: string): string {
-    return path.join(NOTEBOOKS_DIR, `${notebookId}.ipynb`);
+    return `notebooks/${notebookId}.ipynb`;
+  },
+
+  /**
+   * Get the full GCS URI for a notebook
+   */
+  getGcsUri(notebookId: string): string {
+    return `gs://${env.GCS_NOTEBOOKS_BUCKET}/${this.getFilePath(notebookId)}`;
   },
 
   /**
@@ -32,71 +43,105 @@ export const notebookStorage = {
    */
   async exists(notebookId: string): Promise<boolean> {
     try {
-      const filePath = this.getFilePath(notebookId);
-      await fs.access(filePath);
-      return true;
-    } catch {
+      const file = bucket.file(this.getFilePath(notebookId));
+      const [exists] = await file.exists();
+      return exists;
+    } catch (error) {
+      logger.error({ error, notebookId }, 'Failed to check notebook existence');
       return false;
     }
   },
 
   /**
-   * Save a notebook file
+   * Save a notebook file to GCS
    * @param notebookId - The notebook ID (used as filename)
    * @param content - The file content as Buffer
-   * @returns The relative file path (for storing in DB)
+   * @returns The GCS URI for storing in DB
    */
   async saveNotebook(notebookId: string, content: Buffer): Promise<string> {
     const filePath = this.getFilePath(notebookId);
-    
+    const file = bucket.file(filePath);
+
     try {
-      await fs.writeFile(filePath, content);
-      logger.info({ notebookId, filePath }, 'Notebook file saved');
-      
-      // Return relative path for DB storage
-      return `/uploads/notebooks/${notebookId}.ipynb`;
+      await file.save(content, {
+        contentType: 'application/json',
+        metadata: {
+          cacheControl: 'no-cache',
+        },
+      });
+
+      const gcsUri = this.getGcsUri(notebookId);
+      logger.info({ notebookId, gcsUri }, 'Notebook file saved to GCS');
+
+      return gcsUri;
     } catch (error) {
-      logger.error({ error, notebookId }, 'Failed to save notebook file');
+      logger.error({ error, notebookId }, 'Failed to save notebook to GCS');
       throw error;
     }
   },
 
   /**
-   * Read a notebook file
+   * Read a notebook file from GCS
    * @param notebookId - The notebook ID
    * @returns The file content as Buffer
    */
   async readNotebook(notebookId: string): Promise<Buffer> {
-    const filePath = this.getFilePath(notebookId);
-    
+    const file = bucket.file(this.getFilePath(notebookId));
+
     try {
-      const content = await fs.readFile(filePath);
+      const [content] = await file.download();
       return content;
     } catch (error) {
-      logger.error({ error, notebookId }, 'Failed to read notebook file');
+      logger.error({ error, notebookId }, 'Failed to read notebook from GCS');
       throw error;
     }
   },
 
   /**
-   * Delete a notebook file
+   * Delete a notebook file from GCS
    * @param notebookId - The notebook ID
    */
   async deleteNotebook(notebookId: string): Promise<void> {
-    const filePath = this.getFilePath(notebookId);
-    
+    const file = bucket.file(this.getFilePath(notebookId));
+
     try {
       // Check if file exists first
       const exists = await this.exists(notebookId);
       if (!exists) {
-        logger.warn({ notebookId }, 'Notebook file not found for deletion');
+        logger.warn({ notebookId }, 'Notebook file not found in GCS for deletion');
         return;
       }
-      
-      await fs.unlink(filePath);
-      logger.info({ notebookId, filePath }, 'Notebook file deleted');
+
+      await file.delete();
+      logger.info({ notebookId }, 'Notebook file deleted from GCS');
     } catch (error) {
-      logger.error({ error, notebookId }, 'Failed to delete notebook file');
+      logger.error({ error, notebookId }, 'Failed to delete notebook from GCS');
+      throw error;
+    }
+  },
+
+  /**
+   * Generate a signed URL for downloading a notebook (time-limited access)
+   * @param notebookId - The notebook ID
+   * @param expiresInMinutes - How long the URL is valid (default: 15 minutes)
+   * @returns Signed URL for direct download
+   */
+  async getSignedDownloadUrl(
+    notebookId: string,
+    expiresInMinutes = 15
+  ): Promise<string> {
+    const file = bucket.file(this.getFilePath(notebookId));
+
+    try {
+      const [url] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + expiresInMinutes * 60 * 1000,
+      });
+
+      return url;
+    } catch (error) {
+      logger.error({ error, notebookId }, 'Failed to generate signed URL');
       throw error;
     }
   },
@@ -109,24 +154,24 @@ export const notebookStorage = {
    */
   validateNotebookContent(content: Buffer): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     try {
       const text = content.toString('utf-8');
       const notebook = JSON.parse(text);
-      
+
       // Check basic Jupyter notebook structure
       if (!notebook.cells || !Array.isArray(notebook.cells)) {
         errors.push('Invalid notebook: missing or invalid "cells" array');
       }
-      
+
       if (!notebook.metadata || typeof notebook.metadata !== 'object') {
         errors.push('Invalid notebook: missing or invalid "metadata" object');
       }
-      
+
       if (typeof notebook.nbformat !== 'number') {
         errors.push('Invalid notebook: missing "nbformat" version');
       }
-      
+
       // Check for at least one code cell
       if (notebook.cells && Array.isArray(notebook.cells)) {
         const hasCodeCell = notebook.cells.some(
@@ -136,7 +181,7 @@ export const notebookStorage = {
           errors.push('Notebook must contain at least one code cell');
         }
       }
-      
+
       return { valid: errors.length === 0, errors };
     } catch {
       errors.push('Invalid JSON: file is not a valid JSON document');

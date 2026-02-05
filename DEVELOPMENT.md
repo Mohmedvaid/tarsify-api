@@ -78,11 +78,19 @@
 - [ ] Error responses sanitized (no stack traces)
 - [ ] Logging level set to `info`
 
+### Storage
+
+- [x] GCS bucket created (`tarsify-studio-notebooks`)
+- [x] Service account with least-privilege access
+- [x] Local dev using service account key
+- [x] `src/lib/storage.ts` rewritten for GCS
+
 ### Deployment
 
 - [ ] Deploy to Cloud Run (staging)
 - [ ] Configure Secret Manager
 - [ ] Set up Cloud SQL
+- [ ] Attach storage service account to Cloud Run
 - [ ] Domain configuration (api.tarsify.com)
 - [ ] SSL/TLS verification
 

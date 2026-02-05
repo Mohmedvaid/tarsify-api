@@ -45,7 +45,7 @@ Similar to Amazon Marketplace but for AI applications, with simpler UX than Hugg
 | **Backend**              | Node.js + TypeScript       | Central API for both platforms    |
 | **Database**             | PostgreSQL (Cloud SQL)     | Primary data store                |
 | **Authentication**       | Firebase Auth (2 projects) | Separate user pools               |
-| **File Storage**         | Cloud Storage              | Notebooks, models, outputs        |
+| **File Storage**         | GCS (`tarsify-studio-notebooks`) | Notebooks stored in GCS bucket |
 | **Hosting**              | Cloud Run                  | All 3 services (scale to zero)    |
 | **DNS**                  | Cloud DNS                  | Domain management                 |
 | **Secrets**              | Secret Manager             | API keys, credentials             |
@@ -232,10 +232,12 @@ tarsify-studio/
 │   ┌─────────────────────────────────────────────────────────────────┐  │
 │   │                      CLOUD STORAGE                              │  │
 │   │                                                                 │  │
-│   │   ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐  │  │
-│   │   │ notebooks       │  │ models          │  │ outputs       │  │  │
-│   │   │ bucket          │  │ bucket          │  │ bucket        │  │  │
-│   │   └─────────────────┘  └─────────────────┘  └───────────────┘  │  │
+│   │   ┌─────────────────────┐  ┌─────────────────┐  ┌───────────┐  │  │
+│   │   │ tarsify-studio-     │  │ models          │  │ outputs   │  │  │
+│   │   │ notebooks ✅        │  │ bucket          │  │ bucket    │  │  │
+│   │   └─────────────────────┘  └─────────────────┘  └───────────┘  │  │
+│   │                                                                 │  │
+│   │   Service Account: tarsify-api-storage@tarsify-studio...       │  │
 │   │                                                                 │  │
 │   └─────────────────────────────────────────────────────────────────┘  │
 │                                                                         │
@@ -701,14 +703,26 @@ Timeout:              60s        # Reasonable default
 □ Save connection string to Secret Manager
 ```
 
-### Phase 4: Storage Setup
+### Phase 4: Storage Setup ✅ DONE
 
 ```
-□ Create bucket: {project}-notebooks
-□ Create bucket: {project}-models
-□ Create bucket: {project}-outputs
-□ Set appropriate permissions
+✓ Created bucket: tarsify-studio-notebooks (us-central1)
+✓ Created service account: tarsify-api-storage@tarsify-studio.iam.gserviceaccount.com
+✓ Granted roles/storage.objectAdmin (bucket-level only)
+✓ Generated service account key for local dev: secrets/gcs-service-account.json
+✓ Implemented GCS integration in src/lib/storage.ts
+□ Create bucket: tarsify-studio-models (when needed)
+□ Create bucket: tarsify-studio-outputs (when needed)
 ```
+
+#### Storage Security Model
+
+| Environment | Authentication Method |
+|-------------|----------------------|
+| Local Dev   | Service account JSON key (`secrets/gcs-service-account.json`) |
+| Cloud Run   | Workload Identity (attach service account to Cloud Run) |
+
+The service account only has access to the notebooks bucket, not project-wide permissions.
 
 ### Phase 5: Domain Setup
 
@@ -798,10 +812,11 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 RUNPOD_API_KEY=xxx
 
 # GCP
-GCP_PROJECT_ID=tarsify
-GCS_NOTEBOOKS_BUCKET=tarsify-notebooks
-GCS_MODELS_BUCKET=tarsify-models
-GCS_OUTPUTS_BUCKET=tarsify-outputs
+GCP_PROJECT_ID=tarsify-studio
+GOOGLE_APPLICATION_CREDENTIALS=secrets/gcs-service-account.json  # Local dev only
+GCS_NOTEBOOKS_BUCKET=tarsify-studio-notebooks
+GCS_MODELS_BUCKET=tarsify-studio-models
+GCS_OUTPUTS_BUCKET=tarsify-studio-outputs
 ```
 
 ### Frontend - Web (tarsify-web)

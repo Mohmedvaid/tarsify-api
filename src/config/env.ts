@@ -43,7 +43,8 @@ const envSchema = z.object({
 
   // GCP
   GCP_PROJECT_ID: z.string().optional(),
-  GCS_NOTEBOOKS_BUCKET: z.string().optional(),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+  GCS_NOTEBOOKS_BUCKET: z.string().min(1, 'GCS_NOTEBOOKS_BUCKET is required'),
   GCS_MODELS_BUCKET: z.string().optional(),
   GCS_OUTPUTS_BUCKET: z.string().optional(),
 
