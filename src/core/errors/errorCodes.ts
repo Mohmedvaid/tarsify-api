@@ -36,11 +36,21 @@ export const ERROR_CODES = {
   NOTEBOOK_ALREADY_EXISTS: 'ERR_5002',
   NOTEBOOK_INVALID_STATUS: 'ERR_5003',
 
-  // Execution Errors (6xxx)
+  // Execution/Engine Errors (6xxx)
   EXECUTION_NOT_FOUND: 'ERR_6000',
   EXECUTION_FAILED: 'ERR_6001',
   EXECUTION_TIMEOUT: 'ERR_6002',
   GPU_UNAVAILABLE: 'ERR_6003',
+  EXECUTION_NOT_OWNED: 'ERR_6004',
+  EXECUTION_NOT_CANCELLABLE: 'ERR_6005',
+  INVALID_INPUT: 'ERR_6006',
+  MODEL_NOT_FOUND: 'ERR_6100',
+  MODEL_NOT_PUBLISHED: 'ERR_6101',
+  ENDPOINT_NOT_ACTIVE: 'ERR_6102',
+  RUNPOD_REQUEST_FAILED: 'ERR_6200',
+  RUNPOD_RATE_LIMITED: 'ERR_6201',
+  RUNPOD_INVALID_RESPONSE: 'ERR_6202',
+  RUNPOD_JOB_NOT_FOUND: 'ERR_6203',
 
   // Payment Errors (7xxx)
   PAYMENT_FAILED: 'ERR_7000',
@@ -96,6 +106,16 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ERROR_CODES.EXECUTION_FAILED]: 'Execution failed',
   [ERROR_CODES.EXECUTION_TIMEOUT]: 'Execution timed out',
   [ERROR_CODES.GPU_UNAVAILABLE]: 'GPU resources unavailable',
+  [ERROR_CODES.EXECUTION_NOT_OWNED]: 'You do not have access to this execution',
+  [ERROR_CODES.EXECUTION_NOT_CANCELLABLE]: 'Execution cannot be cancelled',
+  [ERROR_CODES.INVALID_INPUT]: 'Invalid input provided',
+  [ERROR_CODES.MODEL_NOT_FOUND]: 'Model not found',
+  [ERROR_CODES.MODEL_NOT_PUBLISHED]: 'Model is not published',
+  [ERROR_CODES.ENDPOINT_NOT_ACTIVE]: 'RunPod endpoint is not active',
+  [ERROR_CODES.RUNPOD_REQUEST_FAILED]: 'RunPod request failed',
+  [ERROR_CODES.RUNPOD_RATE_LIMITED]: 'RunPod rate limit exceeded',
+  [ERROR_CODES.RUNPOD_INVALID_RESPONSE]: 'Invalid response from RunPod',
+  [ERROR_CODES.RUNPOD_JOB_NOT_FOUND]: 'RunPod job not found',
 
   [ERROR_CODES.PAYMENT_FAILED]: 'Payment failed',
   [ERROR_CODES.PAYMENT_NOT_FOUND]: 'Payment not found',

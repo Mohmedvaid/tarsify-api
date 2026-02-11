@@ -27,7 +27,7 @@ model Consumer {
 
   // Relations
   purchases  Purchase[]
-  executions Execution[]
+  executions Execution[]  // Engine executions (new)
 
   @@map("consumers")
 }
@@ -51,8 +51,9 @@ model Developer {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  notebooks Notebook[]
-  payouts   Payout[]
+  notebooks  Notebook[]
+  payouts    Payout[]
+  tarsModels TarsModel[]  // Engine tars models
 
   @@map("developers")
 }
@@ -104,8 +105,7 @@ model Notebook {
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  developer  Developer   @relation(fields: [developerId], references: [id], onDelete: Cascade)
-  executions Execution[]
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
 
   @@index([developerId])
   @@index([status])
@@ -133,35 +133,141 @@ model Purchase {
   @@map("purchases")
 }
 
-/// Execution status
-enum ExecutionStatus {
-  pending
-  running
-  completed
-  failed
+// ============================================
+// ENGINE MODELS (RunPod Integration)
+// ============================================
+
+/// Source of RunPod endpoint
+enum EndpointSource {
+  HUB
+  CUSTOM
 }
 
-/// Execution - Notebook runs by consumers
-model Execution {
-  id             String          @id @default(uuid()) @db.Uuid
-  consumerId     String          @map("consumer_id") @db.Uuid
-  notebookId     String          @map("notebook_id") @db.Uuid
-  status         ExecutionStatus @default(pending)
-  gpuUsed        String?         @map("gpu_used")
-  creditsCharged Int             @map("credits_charged")
-  startedAt      DateTime?       @map("started_at")
-  completedAt    DateTime?       @map("completed_at")
-  outputUrl      String?         @map("output_url")
-  errorMessage   String?         @map("error_message") @db.Text
-  createdAt      DateTime        @default(now()) @map("created_at")
+/// Model categories
+enum ModelCategory {
+  IMAGE
+  AUDIO
+  TEXT
+  VIDEO
+  DOCUMENT
+}
+
+/// Output types from models
+enum OutputType {
+  IMAGE
+  AUDIO
+  TEXT
+  FILE
+  JSON
+}
+
+/// Tars model publication status
+enum TarsModelStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// Engine execution status
+enum EngineExecutionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMED_OUT
+  CANCELLED
+}
+
+/// RunpodEndpoint - Platform-managed RunPod endpoints
+model RunpodEndpoint {
+  id               String         @id @default(uuid()) @db.Uuid
+  runpodEndpointId String         @unique @map("runpod_endpoint_id")
+  name             String         @db.VarChar(100)
+  source           EndpointSource @default(HUB)
+  dockerImage      String?        @map("docker_image")
+  gpuType          String         @map("gpu_type") @db.VarChar(50)
+  isActive         Boolean        @default(true) @map("is_active")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  consumer Consumer @relation(fields: [consumerId], references: [id], onDelete: Cascade)
-  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  baseModels BaseModel[]
+  executions Execution[]
 
-  @@index([consumerId])
-  @@index([notebookId])
+  @@map("runpod_endpoints")
+}
+
+/// BaseModel - AI capabilities developers can build on
+model BaseModel {
+  id               String        @id @default(uuid()) @db.Uuid
+  endpointId       String        @map("endpoint_id") @db.Uuid
+  endpoint         RunpodEndpoint @relation(fields: [endpointId], references: [id])
+  slug             String        @unique @db.VarChar(100)
+  name             String        @db.VarChar(200)
+  description      String?       @db.Text
+  category         ModelCategory
+  inputSchema      Json          @map("input_schema")
+  outputType       OutputType    @map("output_type")
+  outputFormat     String        @map("output_format") @db.VarChar(20)
+  estimatedSeconds Int           @default(30) @map("estimated_seconds")
+  isActive         Boolean       @default(true) @map("is_active")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  tarsModels TarsModel[]
+
+  @@map("base_models")
+}
+
+/// TarsModel - Developer-configured models for marketplace
+model TarsModel {
+  id              String          @id @default(uuid()) @db.Uuid
+  developerId     String          @map("developer_id") @db.Uuid
+  developer       Developer       @relation(fields: [developerId], references: [id])
+  baseModelId     String          @map("base_model_id") @db.Uuid
+  baseModel       BaseModel       @relation(fields: [baseModelId], references: [id])
+  title           String          @db.VarChar(200)
+  slug            String          @unique @db.VarChar(200)
+  description     String?         @db.Text
+  configOverrides Json?           @map("config_overrides")
+  status          TarsModelStatus @default(DRAFT)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  publishedAt     DateTime?       @map("published_at")
+
+  // Relations
+  executions Execution[]
+
+  @@index([developerId])
   @@index([status])
+  @@map("tars_models")
+}
+
+/// Execution - Consumer job runs via engine
+model Execution {
+  id              String                @id @default(uuid()) @db.Uuid
+  consumerId      String                @map("consumer_id") @db.Uuid
+  consumer        Consumer              @relation(fields: [consumerId], references: [id])
+  tarsModelId     String                @map("tars_model_id") @db.Uuid
+  tarsModel       TarsModel             @relation(fields: [tarsModelId], references: [id])
+  endpointId      String                @map("endpoint_id") @db.Uuid
+  endpoint        RunpodEndpoint        @relation(fields: [endpointId], references: [id])
+  status          EngineExecutionStatus @default(PENDING)
+  runpodJobId     String?               @unique @map("runpod_job_id")
+  inputPayload    Json?                 @map("input_payload")
+  outputPayload   Json?                 @map("output_payload")
+  errorMessage    String?               @map("error_message") @db.Text
+  errorCode       String?               @map("error_code") @db.VarChar(50)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  completedAt     DateTime?             @map("completed_at")
+  executionTimeMs Int?                  @map("execution_time_ms")
+
+  @@index([consumerId, createdAt(sort: Desc)])
+  @@index([tarsModelId])
+  @@index([status])
+  @@index([runpodJobId])
   @@map("executions")
 }
 

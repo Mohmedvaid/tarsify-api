@@ -9,6 +9,7 @@ import { marketplaceRoutes } from './marketplace/index';
 import { studioRoutes } from './studio/index';
 import { publicRoutes } from './public/index';
 import { webhookRoutes } from './webhooks/index';
+import { adminRoutes } from './admin/index';
 
 /**
  * Register all application routes
@@ -31,6 +32,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
       // Webhook routes
       await api.register(webhookRoutes, { prefix: ROUTE_GROUPS.WEBHOOKS });
+
+      // Admin routes (admin auth)
+      await api.register(adminRoutes, { prefix: ROUTE_GROUPS.ADMIN });
     },
     { prefix: API_PREFIX }
   );

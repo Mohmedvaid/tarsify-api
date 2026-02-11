@@ -19,6 +19,9 @@ export {
   requireConsumerFirebaseToken,
 } from './consumerAuth';
 
+// Admin auth (Admin routes)
+export { requireAdmin } from './adminAuth';
+
 export type { ConsumerRequest, AuthenticatedConsumerRequest } from './consumerAuth';
 
 export type {

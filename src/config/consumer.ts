@@ -91,39 +91,6 @@ export const CATEGORIES = {
 export type CategoryKey = keyof typeof CATEGORIES;
 
 /**
- * Execution status configuration
- * Maps internal statuses to consumer-friendly labels
- */
-export const EXECUTION_DISPLAY = {
-  pending: {
-    key: 'pending',
-    displayName: 'Queued',
-    description: 'Waiting in queue',
-    color: 'gray',
-  },
-  running: {
-    key: 'running',
-    displayName: 'Processing',
-    description: 'Currently running',
-    color: 'blue',
-  },
-  completed: {
-    key: 'completed',
-    displayName: 'Complete',
-    description: 'Finished successfully',
-    color: 'green',
-  },
-  failed: {
-    key: 'failed',
-    displayName: 'Failed',
-    description: 'Something went wrong',
-    color: 'red',
-  },
-} as const;
-
-export type ExecutionStatusKey = keyof typeof EXECUTION_DISPLAY;
-
-/**
  * Credit pricing configuration
  * How much things cost in credits
  */
@@ -211,14 +178,6 @@ export function getCategoryInfo(category: string) {
     icon: '🔮',
     sortOrder: 99,
   };
-}
-
-/**
- * Get consumer-friendly execution status
- */
-export function getExecutionStatusDisplay(status: string): string {
-  const s = EXECUTION_DISPLAY[status as ExecutionStatusKey];
-  return s?.displayName ?? status;
 }
 
 /**

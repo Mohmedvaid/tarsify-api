@@ -26,7 +26,6 @@ export {
   CACHE_TTL,
   GPU_TYPES,
   NOTEBOOK_STATUS,
-  EXECUTION_STATUS,
   PAYOUT_STATUS,
   NOTEBOOK_CATEGORIES,
 } from './constants';
@@ -34,7 +33,6 @@ export {
 export type {
   GpuType,
   NotebookStatus,
-  ExecutionStatus,
   PayoutStatus,
   NotebookCategory,
 } from './constants';
@@ -43,15 +41,13 @@ export type {
 export {
   COMPUTE_TIERS,
   CATEGORIES,
-  EXECUTION_DISPLAY,
   CREDIT_PRICING,
   DISPLAY_LABELS,
   getComputeTierDisplay,
   getComputeTierInfo,
   getCategoryDisplay,
   getCategoryInfo,
-  getExecutionStatusDisplay,
   formatCredits,
 } from './consumer';
 
-export type { ComputeTierKey, CategoryKey, ExecutionStatusKey } from './consumer';
+export type { ComputeTierKey, CategoryKey } from './consumer';

@@ -6,12 +6,10 @@ import { describe, it, expect } from 'vitest';
 import {
   COMPUTE_TIERS,
   CATEGORIES,
-  EXECUTION_DISPLAY,
   CREDIT_PRICING,
   DISPLAY_LABELS,
   getComputeTierDisplay,
   getCategoryDisplay,
-  getExecutionStatusDisplay,
   formatCredits,
 } from './consumer';
 
@@ -50,24 +48,6 @@ describe('Consumer Config', () => {
         expect(category.displayName).toBeDefined();
         expect(category.description).toBeDefined();
         expect(category.icon).toBeDefined();
-      });
-    });
-  });
-
-  describe('EXECUTION_DISPLAY', () => {
-    it('should have all status types mapped', () => {
-      expect(EXECUTION_DISPLAY.pending).toBeDefined();
-      expect(EXECUTION_DISPLAY.running).toBeDefined();
-      expect(EXECUTION_DISPLAY.completed).toBeDefined();
-      expect(EXECUTION_DISPLAY.failed).toBeDefined();
-    });
-
-    it('should have required properties for each status', () => {
-      Object.values(EXECUTION_DISPLAY).forEach(status => {
-        expect(status.key).toBeDefined();
-        expect(status.displayName).toBeDefined();
-        expect(status.description).toBeDefined();
-        expect(status.color).toBeDefined();
       });
     });
   });
@@ -141,19 +121,6 @@ describe('Consumer Config', () => {
 
     it('should handle empty string', () => {
       expect(getCategoryDisplay('')).toBe('');
-    });
-  });
-
-  describe('getExecutionStatusDisplay', () => {
-    it('should return display name for valid status', () => {
-      expect(getExecutionStatusDisplay('pending')).toBe('Queued');
-      expect(getExecutionStatusDisplay('running')).toBe('Processing');
-      expect(getExecutionStatusDisplay('completed')).toBe('Complete');
-      expect(getExecutionStatusDisplay('failed')).toBe('Failed');
-    });
-
-    it('should return input for unknown status', () => {
-      expect(getExecutionStatusDisplay('unknown')).toBe('unknown');
     });
   });
 

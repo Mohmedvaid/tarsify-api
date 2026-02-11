@@ -55,6 +55,12 @@ const envSchema = z.object({
   // RunPod
   RUNPOD_API_KEY: z.string().optional(),
 
+  // Admin
+  ADMIN_UIDS: z
+    .string()
+    .transform((val) => val.split(',').map((s) => s.trim()).filter(Boolean))
+    .default(''),
+
   // Security
   CORS_ORIGINS: z
     .string()

@@ -82,17 +82,6 @@ export const NOTEBOOK_STATUS = ['draft', 'published', 'archived'] as const;
 export type NotebookStatus = (typeof NOTEBOOK_STATUS)[number];
 
 /**
- * Execution statuses
- */
-export const EXECUTION_STATUS = [
-  'pending',
-  'running',
-  'completed',
-  'failed',
-] as const;
-export type ExecutionStatus = (typeof EXECUTION_STATUS)[number];
-
-/**
  * Payout statuses
  */
 export const PAYOUT_STATUS = [

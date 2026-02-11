@@ -123,23 +123,19 @@ export const consumerRepository = {
 
     if (!consumer) return null;
 
-    // Calculate total credits spent from executions
-    const spentResult = await prisma.execution.aggregate({
-      where: { consumerId: id },
-      _sum: { creditsCharged: true },
-    });
-
     // Calculate total credits purchased
     const purchasedResult = await prisma.purchase.aggregate({
       where: { consumerId: id },
       _sum: { creditsAmount: true },
     });
 
+    // TODO: Add credit tracking to Execution model in future iteration
+    // For now, return 0 for totalCreditsSpent
     return {
       ...consumer,
       runCount: consumer._count.executions,
       purchaseCount: consumer._count.purchases,
-      totalCreditsSpent: spentResult._sum.creditsCharged || 0,
+      totalCreditsSpent: 0,
       totalCreditsPurchased: purchasedResult._sum.creditsAmount || 0,
     };
   },

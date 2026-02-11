@@ -19,6 +19,7 @@ export const ROUTE_GROUPS = {
   MARKETPLACE: '/marketplace', // Consumer-facing routes
   STUDIO: '/studio', // Developer-facing routes
   WEBHOOKS: '/webhooks',
+  ADMIN: '/admin', // Admin-only routes
 } as const;
 
 /**

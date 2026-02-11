@@ -6,7 +6,6 @@
 import type { FastifyInstance } from 'fastify';
 import { consumerAuthRoutes } from './auth';
 import { marketplaceNotebooksRoutes } from './notebooks';
-import { runsRoutes, notebookRunRoutes } from './runs';
 import { creditsRoutes } from './credits';
 
 /**
@@ -18,12 +17,6 @@ export async function marketplaceRoutes(app: FastifyInstance): Promise<void> {
 
   // Notebook routes - /api/marketplace/notebooks/* (mostly PUBLIC)
   await app.register(marketplaceNotebooksRoutes, { prefix: '/notebooks' });
-
-  // Notebook run endpoint - /api/marketplace/notebooks/:id/run (AUTH required)
-  await app.register(notebookRunRoutes, { prefix: '/notebooks' });
-
-  // Runs routes - /api/marketplace/runs/* (AUTH required)
-  await app.register(runsRoutes, { prefix: '/runs' });
 
   // Credits routes - /api/marketplace/credits/* (AUTH required for most)
   await app.register(creditsRoutes, { prefix: '/credits' });
