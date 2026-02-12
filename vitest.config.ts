@@ -39,6 +39,14 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 10000,
     hookTimeout: 10000,
+    teardownTimeout: 5000,
+    // Use forks pool for better cleanup (prevents orphaned processes)
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     // Load .env file
     env: {
       NODE_ENV: 'test',
