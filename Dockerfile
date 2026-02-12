@@ -9,8 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies (production only)
-RUN npm ci --only=production && \
+# Install dependencies (production only) - disable Husky prepare script
+RUN HUSKY=0 npm ci --only=production && \
   npx prisma generate
 
 # ============================================
@@ -20,9 +20,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install all deps (including dev)
+# Copy package files and install all deps (including dev) - disable Husky prepare script
 COPY package*.json ./
-RUN npm ci
+RUN HUSKY=0 npm ci
 
 # Copy source code
 COPY . .
