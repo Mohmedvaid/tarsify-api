@@ -58,14 +58,25 @@ const envSchema = z.object({
   // Admin
   ADMIN_UIDS: z
     .string()
-    .transform((val) => val.split(',').map((s) => s.trim()).filter(Boolean))
+    .transform((val) =>
+      val
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
     .default(''),
 
   // Security
+  // CORS_ORIGINS uses pipe (|) delimiter to avoid conflicts with Cloud Run env var parsing
   CORS_ORIGINS: z
     .string()
-    .transform((val) => val.split(',').map((s) => s.trim()))
-    .default('http://localhost:3000,http://localhost:3001'),
+    .transform((val) =>
+      val
+        .split('|')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+    .default('http://localhost:3000|http://localhost:3001'),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
 
