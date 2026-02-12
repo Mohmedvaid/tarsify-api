@@ -3,7 +3,11 @@
  * Verifies Firebase JWT and loads consumer from database
  * For Marketplace routes (tarsify-users Firebase project)
  */
-import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
+import type {
+  FastifyRequest,
+  FastifyReply,
+  preHandlerHookHandler,
+} from 'fastify';
 import type { Consumer } from '@prisma/client';
 import { firebaseAdmin } from '@/services/firebase';
 import { consumerRepository } from '@/repositories';
@@ -58,7 +62,11 @@ export interface ConsumerAuthMiddlewareOptions extends AuthMiddlewareOptions {
 export function createConsumerAuthMiddleware(
   options: ConsumerAuthMiddlewareOptions
 ): preHandlerHookHandler {
-  const { project, requireConsumer = true, allowRegistration = false } = options;
+  const {
+    project,
+    requireConsumer = true,
+    allowRegistration = false,
+  } = options;
 
   return async function consumerAuthMiddleware(
     request: FastifyRequest,
@@ -73,7 +81,10 @@ export function createConsumerAuthMiddleware(
 
     try {
       // Verify Firebase token
-      const firebaseUser: FirebaseUser = await firebaseAdmin.verifyToken(token, project);
+      const firebaseUser: FirebaseUser = await firebaseAdmin.verifyToken(
+        token,
+        project
+      );
 
       // Attach Firebase user to request
       (request as AuthenticatedRequest).firebaseUser = firebaseUser;
@@ -85,7 +96,9 @@ export function createConsumerAuthMiddleware(
 
       // If consumer is required, load from database
       if (requireConsumer) {
-        const consumer = await consumerRepository.findByFirebaseUid(firebaseUser.uid);
+        const consumer = await consumerRepository.findByFirebaseUid(
+          firebaseUser.uid
+        );
 
         if (!consumer && !allowRegistration) {
           // Consumer must register first
@@ -111,7 +124,28 @@ export function createConsumerAuthMiddleware(
       }
 
       // Handle Firebase verification errors
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorName = error instanceof Error ? error.name : '';
+
+      // Check for database/infrastructure errors - these should not be 401
+      if (
+        errorName.includes('Prisma') ||
+        errorMessage.includes("Can't reach database") ||
+        errorMessage.includes('database server') ||
+        errorMessage.includes('Connection refused') ||
+        errorMessage.includes('ECONNREFUSED')
+      ) {
+        logger.error(
+          { error },
+          'Database connection error in consumer auth middleware'
+        );
+        throw new AppError(
+          ERROR_CODES.INTERNAL_ERROR,
+          'Service temporarily unavailable',
+          HTTP_STATUS.SERVICE_UNAVAILABLE
+        );
+      }
 
       if (errorMessage.includes('expired')) {
         throw new AppError(

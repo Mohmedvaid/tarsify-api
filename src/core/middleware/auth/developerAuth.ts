@@ -3,14 +3,22 @@
  * Verifies Firebase JWT and loads developer from database
  * For Studio routes (tarsify-devs Firebase project)
  */
-import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
+import type {
+  FastifyRequest,
+  FastifyReply,
+  preHandlerHookHandler,
+} from 'fastify';
 import { firebaseAdmin } from '@/services/firebase';
 import { developerRepository } from '@/repositories';
 import { UnauthorizedError, AppError } from '@/core/errors';
 import { ERROR_CODES } from '@/core/errors/errorCodes';
 import { HTTP_STATUS } from '@/config/constants';
 import { logger } from '@/lib/logger';
-import type { DeveloperRequest, AuthenticatedRequest, AuthMiddlewareOptions } from './types';
+import type {
+  DeveloperRequest,
+  AuthenticatedRequest,
+  AuthMiddlewareOptions,
+} from './types';
 
 /**
  * Extract bearer token from Authorization header
@@ -33,7 +41,11 @@ function extractBearerToken(authHeader: string | undefined): string | null {
 export function createAuthMiddleware(
   options: AuthMiddlewareOptions
 ): preHandlerHookHandler {
-  const { project, requireDeveloper = true, allowRegistration = false } = options;
+  const {
+    project,
+    requireDeveloper = true,
+    allowRegistration = false,
+  } = options;
 
   return async function authMiddleware(
     request: FastifyRequest,
@@ -60,7 +72,9 @@ export function createAuthMiddleware(
 
       // If developer is required, load from database
       if (requireDeveloper) {
-        const developer = await developerRepository.findByFirebaseUid(firebaseUser.uid);
+        const developer = await developerRepository.findByFirebaseUid(
+          firebaseUser.uid
+        );
 
         if (!developer && !allowRegistration) {
           // Developer must register first
@@ -86,7 +100,25 @@ export function createAuthMiddleware(
       }
 
       // Handle Firebase verification errors
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorName = error instanceof Error ? error.name : '';
+
+      // Check for database/infrastructure errors - these should not be 401
+      if (
+        errorName.includes('Prisma') ||
+        errorMessage.includes("Can't reach database") ||
+        errorMessage.includes('database server') ||
+        errorMessage.includes('Connection refused') ||
+        errorMessage.includes('ECONNREFUSED')
+      ) {
+        logger.error({ error }, 'Database connection error in auth middleware');
+        throw new AppError(
+          ERROR_CODES.INTERNAL_ERROR,
+          'Service temporarily unavailable',
+          HTTP_STATUS.SERVICE_UNAVAILABLE
+        );
+      }
 
       if (errorMessage.includes('expired')) {
         throw new AppError(

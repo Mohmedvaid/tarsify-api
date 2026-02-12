@@ -138,17 +138,20 @@ describe('Developer Auth Middleware', () => {
       expect(body.data.firebaseUid).toBe(testFirebaseUid);
     });
 
-    it.skipIf(!dbAvailable)('should return 404 when developer not found', async () => {
-      const response = await app.inject({
-        method: 'GET',
-        url: `${BASE_URL}/auth/me`,
-        headers: { authorization: `Bearer dev_nonexistent-user` },
-      });
+    it.skipIf(!dbAvailable)(
+      'should return 404 when developer not found',
+      async () => {
+        const response = await app.inject({
+          method: 'GET',
+          url: `${BASE_URL}/auth/me`,
+          headers: { authorization: `Bearer dev_nonexistent-user` },
+        });
 
-      expect(response.statusCode).toBe(404);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe('ERR_4000'); // DEVELOPER_NOT_FOUND
-    });
+        expect(response.statusCode).toBe(404);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('ERR_4000'); // DEVELOPER_NOT_FOUND
+      }
+    );
   });
 
   describe('Registration Flow (allowRegistration: true)', () => {
@@ -165,27 +168,30 @@ describe('Developer Auth Middleware', () => {
       expect(body.data.firebaseUid).toBe(testFirebaseUid);
     });
 
-    it.skipIf(!dbAvailable)('should reject registration when already registered', async () => {
-      // Register first
-      await app.inject({
-        method: 'POST',
-        url: `${BASE_URL}/auth/register`,
-        headers: { authorization: `Bearer ${mockToken}` },
-        payload: { email: testEmail, displayName: 'First Register' },
-      });
+    it.skipIf(!dbAvailable)(
+      'should reject registration when already registered',
+      async () => {
+        // Register first
+        await app.inject({
+          method: 'POST',
+          url: `${BASE_URL}/auth/register`,
+          headers: { authorization: `Bearer ${mockToken}` },
+          payload: { email: testEmail, displayName: 'First Register' },
+        });
 
-      // Try to register again
-      const response = await app.inject({
-        method: 'POST',
-        url: `${BASE_URL}/auth/register`,
-        headers: { authorization: `Bearer ${mockToken}` },
-        payload: { email: 'other@example.com', displayName: 'Second Try' },
-      });
+        // Try to register again
+        const response = await app.inject({
+          method: 'POST',
+          url: `${BASE_URL}/auth/register`,
+          headers: { authorization: `Bearer ${mockToken}` },
+          payload: { email: 'other@example.com', displayName: 'Second Try' },
+        });
 
-      expect(response.statusCode).toBe(409);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe('ERR_4001'); // DEVELOPER_ALREADY_EXISTS
-    });
+        expect(response.statusCode).toBe(409);
+        const body = JSON.parse(response.body);
+        expect(body.error.code).toBe('ERR_4001'); // DEVELOPER_ALREADY_EXISTS
+      }
+    );
   });
 
   describe('Token Error Handling', () => {
@@ -242,9 +248,9 @@ describe('Developer Auth Middleware', () => {
         headers: { authorization: `bearer ${mockToken}` },
       });
 
-      // Should pass token validation, may fail on developer lookup (404 vs 401)
-      // The important thing is it doesn't reject the header format
-      expect([200, 404]).toContain(response.statusCode);
+      // Should pass token validation, may fail on developer lookup (404) or DB unavailable (503)
+      // The important thing is it doesn't reject the header format (401)
+      expect([200, 404, 503]).toContain(response.statusCode);
     });
 
     it('should accept "BEARER" uppercase', async () => {
@@ -254,39 +260,42 @@ describe('Developer Auth Middleware', () => {
         headers: { authorization: `BEARER ${mockToken}` },
       });
 
-      expect([200, 404]).toContain(response.statusCode);
+      expect([200, 404, 503]).toContain(response.statusCode);
     });
   });
 
   describe('Concurrent Authentication', () => {
-    it.skipIf(!dbAvailable)('should handle concurrent requests correctly', async () => {
-      // Create developer
-      await prisma.developer.create({
-        data: {
-          firebaseUid: testFirebaseUid,
-          email: testEmail,
-          name: 'Concurrent Test Dev',
-        },
-      });
+    it.skipIf(!dbAvailable)(
+      'should handle concurrent requests correctly',
+      async () => {
+        // Create developer
+        await prisma.developer.create({
+          data: {
+            firebaseUid: testFirebaseUid,
+            email: testEmail,
+            name: 'Concurrent Test Dev',
+          },
+        });
 
-      // Make multiple concurrent requests
-      const requests = Array(10)
-        .fill(null)
-        .map(() =>
-          app.inject({
-            method: 'GET',
-            url: `${BASE_URL}/auth/me`,
-            headers: { authorization: `Bearer ${mockToken}` },
-          })
-        );
+        // Make multiple concurrent requests
+        const requests = Array(10)
+          .fill(null)
+          .map(() =>
+            app.inject({
+              method: 'GET',
+              url: `${BASE_URL}/auth/me`,
+              headers: { authorization: `Bearer ${mockToken}` },
+            })
+          );
 
-      const responses = await Promise.all(requests);
+        const responses = await Promise.all(requests);
 
-      // All should succeed
-      responses.forEach((response) => {
-        expect(response.statusCode).toBe(200);
-      });
-    });
+        // All should succeed
+        responses.forEach((response) => {
+          expect(response.statusCode).toBe(200);
+        });
+      }
+    );
   });
 
   describe('Response Headers', () => {
