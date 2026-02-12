@@ -1,8 +1,9 @@
 # Tarsify API — Architecture
 
-> **Last Updated:** February 11, 2026
+> **Last Updated:** February 12, 2026
 > **Repo:** tarsify-api
 > **Runtime:** Node.js 20+ | Fastify 5 | TypeScript 5 | ESM
+> **Test Coverage:** 86%+ (726 tests)
 
 ---
 
@@ -18,46 +19,44 @@ Three services: `tarsify-api` (this repo), `tarsify-studio` (developer portal), 
 
 ---
 
-## ⚠️ Architecture Transition Notice
+## Architecture Status ✅
 
-This codebase is transitioning from an **old notebook-based model** to a **new engine-based model**.
+Phase 3 (Engine Integration) is **complete**. The codebase now has:
 
-### Old Model (Phase 1-2, still in codebase)
-- Developers uploaded `.ipynb` Jupyter notebook files
-- Notebooks were the unit of work
-- GPU execution was mocked (never real)
-- Tables: `notebooks`, old `executions` (tied to notebooks)
-- Routes: `/api/studio/notebooks/*`, `/api/marketplace/notebooks/*`
-- Docs: archived in `docs/archive/`
+### Engine Model (Active)
 
-### New Model (Phase 3+, being built)
 - Platform deploys AI models on RunPod Serverless (real GPUs)
 - Developers pick base models, configure/brand them as "Tars Models"
 - Consumers run Tars Models → hits RunPod endpoints → gets results
-- Tables: `runpod_endpoints`, `base_models`, `tars_models`, new `executions`
-- Routes: `/api/admin/*`, `/api/developer/tars-models/*`, `/api/marketplace/models/*`, `/api/consumer/executions/*`
+- Tables: `runpod_endpoints`, `base_models`, `tars_models`, `executions`
+- Routes: `/api/admin/*`, `/api/studio/tars-models/*`, `/api/marketplace/models/*`, `/api/marketplace/runs/*`
 - Engine module: `src/engine/`
 
-**Old code still exists and compiles.** Notebook routes and tests still work. New engine work is ADDITIVE — built alongside, not by deleting old code. Old notebook tables and routes will be deprecated and removed in a future cleanup phase.
+### Legacy Notebook Model (Deprecated)
 
-**If you encounter old notebook-related code, do NOT modify or delete it. Build new engine code in its own modules.**
+- Developers uploaded `.ipynb` Jupyter notebook files
+- Routes: `/api/studio/notebooks/*`, `/api/marketplace/notebooks/*`
+- Tables: `notebooks` (still in DB, will be removed)
+- **Status:** Code still compiles but deprecated. Do not extend.
 
 ---
 
 ## Tech Stack
 
-| Technology              | Purpose              |
-| ----------------------- | -------------------- |
-| **Fastify 5**           | HTTP framework       |
-| **TypeScript 5 (ESM)**  | Language             |
-| **Prisma 6**            | ORM + migrations     |
-| **PostgreSQL**          | Database             |
-| **Firebase Admin SDK**  | Auth (2 projects)    |
-| **Zod**                 | Input validation     |
-| **Google Cloud Storage**| File storage         |
-| **RunPod Serverless**   | GPU execution        |
-| **Vitest**              | Testing              |
-| **pino**                | Logging              |
+| Technology               | Purpose            |
+| ------------------------ | ------------------ |
+| **Fastify 5**            | HTTP framework     |
+| **TypeScript 5 (ESM)**   | Language           |
+| **Prisma 6**             | ORM + migrations   |
+| **PostgreSQL**           | Database           |
+| **Firebase Admin SDK**   | Auth (2 projects)  |
+| **Zod**                  | Input validation   |
+| **Google Cloud Storage** | File storage       |
+| **RunPod Serverless**    | GPU execution      |
+| **Vitest**               | Testing (86%+ cov) |
+| **pino**                 | Logging            |
+| **Husky**                | Git hooks          |
+| **GitHub Actions**       | CI/CD pipeline     |
 
 ---
 
@@ -111,22 +110,22 @@ tarsify-api/
 
 ### Active Tables
 
-| Table              | Purpose                                     | Status      |
-| ------------------ | ------------------------------------------- | ----------- |
-| `consumers`        | End users (Firebase Project A)              | ✅ Active   |
-| `developers`       | AI devs (Firebase Project B)                | ✅ Active   |
-| `runpod_endpoints` | RunPod endpoints deployed by platform       | 🆕 New      |
-| `base_models`      | AI capabilities devs can build on           | 🆕 New      |
-| `tars_models`      | What developers publish (configured models) | 🆕 New      |
+| Table              | Purpose                                     | Status                              |
+| ------------------ | ------------------------------------------- | ----------------------------------- |
+| `consumers`        | End users (Firebase Project A)              | ✅ Active                           |
+| `developers`       | AI devs (Firebase Project B)                | ✅ Active                           |
+| `runpod_endpoints` | RunPod endpoints deployed by platform       | 🆕 New                              |
+| `base_models`      | AI capabilities devs can build on           | 🆕 New                              |
+| `tars_models`      | What developers publish (configured models) | 🆕 New                              |
 | `executions`       | Job runs by consumers                       | 🆕 New (old mocked version deleted) |
-| `purchases`        | Credit purchases                            | ✅ Active   |
-| `payouts`          | Developer withdrawals                       | ✅ Active   |
+| `purchases`        | Credit purchases                            | ✅ Active                           |
+| `payouts`          | Developer withdrawals                       | ✅ Active                           |
 
 ### Deprecated Tables (still in DB, will be removed later)
 
-| Table         | Replaced By                    |
-| ------------- | ------------------------------ |
-| `notebooks`   | `base_models` + `tars_models`  |
+| Table       | Replaced By                   |
+| ----------- | ----------------------------- |
+| `notebooks` | `base_models` + `tars_models` |
 
 ### Table Relationships
 
@@ -161,10 +160,10 @@ One SDXL endpoint → powers "Anime Generator," "Logo Maker," "Portrait Studio" 
 
 ### Two Firebase Projects (Complete Isolation)
 
-| Firebase Project  | User Type  | Route Prefix       | Domain             |
-| ----------------- | ---------- | ------------------ | ------------------ |
-| `tarsify-users`   | Consumers  | `/api/marketplace` | tarsify.com        |
-| `tarsify-devs`    | Developers | `/api/studio`      | studio.tarsify.com |
+| Firebase Project | User Type  | Route Prefix       | Domain             |
+| ---------------- | ---------- | ------------------ | ------------------ |
+| `tarsify-users`  | Consumers  | `/api/marketplace` | tarsify.com        |
+| `tarsify-devs`   | Developers | `/api/studio`      | studio.tarsify.com |
 
 All protected endpoints require `Authorization: Bearer <firebase-jwt-token>`.
 
@@ -202,14 +201,14 @@ Consumer clicks Run on "Anime Art Generator"
 
 ### Available RunPod Hub Models
 
-| Hub Repo         | Category | Base Model Name     | Endpoint Status |
-| ---------------- | -------- | ------------------- | --------------- |
-| Chatterbox TTS   | AUDIO    | Text to Speech      | ✅ Live: `9ib1e8vvtjxrwh` |
-| SDXL             | IMAGE    | Image Generator     | ⏳ Deploy next  |
-| Faster Whisper   | AUDIO    | Speech to Text      | ⏳ Deploy next  |
-| vLLM             | TEXT     | AI Chat / Text Gen  | ⏳ Deploy next  |
-| ComfyUI          | IMAGE    | Pro Image Studio    | 🔮 Later        |
-| Mochi 1          | VIDEO    | Video Generator     | 🔮 Later        |
+| Hub Repo       | Category | Base Model Name    | Endpoint Status           |
+| -------------- | -------- | ------------------ | ------------------------- |
+| Chatterbox TTS | AUDIO    | Text to Speech     | ✅ Live: `9ib1e8vvtjxrwh` |
+| SDXL           | IMAGE    | Image Generator    | ⏳ Deploy next            |
+| Faster Whisper | AUDIO    | Speech to Text     | ⏳ Deploy next            |
+| vLLM           | TEXT     | AI Chat / Text Gen | ⏳ Deploy next            |
+| ComfyUI        | IMAGE    | Pro Image Studio   | 🔮 Later                  |
+| Mochi 1        | VIDEO    | Video Generator    | 🔮 Later                  |
 
 ---
 
@@ -230,17 +229,17 @@ routes/
 
 ### Naming Conventions
 
-| Type             | Convention             | Example                      |
-| ---------------- | ---------------------- | ---------------------------- |
-| Files            | kebab-case             | `tars-model.service.ts`      |
-| Functions        | camelCase              | `getTarsModelById()`         |
-| Classes          | PascalCase             | `AppError`                   |
-| Constants        | UPPER_SNAKE            | `ERROR_CODES`                |
-| Types/Interfaces | PascalCase             | `TarsModelResponse`          |
-| Zod schemas      | camelCase + Schema     | `createTarsModelSchema`      |
-| JSON schemas     | camelCase + JsonSchema | `tarsModelResponseJsonSchema`|
-| Route handlers   | camelCase + Handler    | `createTarsModelHandler`     |
-| Services         | camelCase + Service    | `tarsModelService`           |
+| Type             | Convention             | Example                       |
+| ---------------- | ---------------------- | ----------------------------- |
+| Files            | kebab-case             | `tars-model.service.ts`       |
+| Functions        | camelCase              | `getTarsModelById()`          |
+| Classes          | PascalCase             | `AppError`                    |
+| Constants        | UPPER_SNAKE            | `ERROR_CODES`                 |
+| Types/Interfaces | PascalCase             | `TarsModelResponse`           |
+| Zod schemas      | camelCase + Schema     | `createTarsModelSchema`       |
+| JSON schemas     | camelCase + JsonSchema | `tarsModelResponseJsonSchema` |
+| Route handlers   | camelCase + Handler    | `createTarsModelHandler`      |
+| Services         | camelCase + Service    | `tarsModelService`            |
 
 ### Import Style
 
@@ -269,7 +268,9 @@ Services contain business logic. No Fastify imports. Return `{ data: ... }`.
 
 ```typescript
 export const tarsModelService = {
-  async create(input: CreateTarsModelInput): Promise<{ data: TarsModelResponse }> {
+  async create(
+    input: CreateTarsModelInput
+  ): Promise<{ data: TarsModelResponse }> {
     const model = await prisma.tarsModel.create({ data: input });
     return { data: model };
   },
@@ -281,7 +282,10 @@ export const tarsModelService = {
 Controllers validate with Zod, call services, send responses.
 
 ```typescript
-export async function createTarsModelHandler(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function createTarsModelHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
   const parseResult = createTarsModelSchema.safeParse(request.body);
   if (!parseResult.success) {
     throw new AppError(ERROR_CODES.VALIDATION_ERROR, 'Invalid input', 400);
@@ -304,18 +308,18 @@ throw new AppError(ERROR_CODES.NOT_FOUND, 'Model not found', 404);
 
 When building new modules, follow patterns in these existing files:
 
-| Task                    | Reference                                           |
-| ----------------------- | --------------------------------------------------- |
-| Route module structure  | `src/routes/studio/notebooks/`                      |
-| Auth middleware          | `src/core/middleware/auth/developerAuth.ts`         |
-| Consumer auth           | `src/core/middleware/auth/consumerAuth.ts`          |
-| Zod + JSON schemas      | `src/routes/marketplace/notebooks/notebooks.schemas.ts` |
-| Service with Prisma     | `src/routes/studio/notebooks/notebook.service.ts`   |
-| Controller handlers     | `src/routes/studio/notebooks/notebook.controller.ts`|
-| Route definitions       | `src/routes/studio/notebooks/notebook.routes.ts`    |
-| Tests                   | `src/routes/studio/notebooks/notebook.test.ts`      |
-| Error classes           | `src/core/errors/AppError.ts`                       |
-| API responses           | `src/core/responses/ApiResponse.ts`                 |
+| Task                   | Reference                                               |
+| ---------------------- | ------------------------------------------------------- |
+| Route module structure | `src/routes/studio/notebooks/`                          |
+| Auth middleware        | `src/core/middleware/auth/developerAuth.ts`             |
+| Consumer auth          | `src/core/middleware/auth/consumerAuth.ts`              |
+| Zod + JSON schemas     | `src/routes/marketplace/notebooks/notebooks.schemas.ts` |
+| Service with Prisma    | `src/routes/studio/notebooks/notebook.service.ts`       |
+| Controller handlers    | `src/routes/studio/notebooks/notebook.controller.ts`    |
+| Route definitions      | `src/routes/studio/notebooks/notebook.routes.ts`        |
+| Tests                  | `src/routes/studio/notebooks/notebook.test.ts`          |
+| Error classes          | `src/core/errors/AppError.ts`                           |
+| API responses          | `src/core/responses/ApiResponse.ts`                     |
 
 ---
 

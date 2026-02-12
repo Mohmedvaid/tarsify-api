@@ -29,25 +29,27 @@
 - [x] Marketplace notebook browse (mock)
 - [x] Consumer runs/credits (mock)
 
-## Phase 3: Engine — RunPod Integration ← CURRENT
+## Phase 3: Engine — RunPod Integration ✅
 
-> **Task doc:** `TASK.md`
 > **What:** Real GPU execution via RunPod Serverless. Dynamic model catalog. Admin, developer, and consumer APIs.
 
-- [ ] **Task 0:** Doc cleanup — archive old docs, set up new doc structure
-- [ ] **Task 1:** Database migration — delete old Execution model, add engine tables (runpod_endpoints, base_models, tars_models, executions)
-- [ ] **Task 2:** Engine module structure — types, errors, directory
-- [ ] **Task 3:** RunPod client — HTTP wrapper with retry, status mapping
-- [ ] **Task 4:** Input merger — merge user inputs with developer configOverrides
-- [ ] **Task 5:** Engine core — submitJob, getJobStatus, cancelJob
-- [ ] **Task 6:** Admin routes — CRUD for endpoints and base models
-- [ ] **Task 7:** Developer routes — tars model create, configure, publish
-- [ ] **Task 8:** Consumer routes — marketplace browse, run models, poll status
-- [ ] **Task 9:** Seed script — initial data for dev/testing
-- [ ] **Task 10:** Wire together — register routes, env vars, E2E test
-- [ ] **Task 11:** Update API.md with all new endpoints
+- [x] **Task 0:** Doc cleanup — archive old docs, set up new doc structure
+- [x] **Task 1:** Database migration — delete old Execution model, add engine tables (runpod_endpoints, base_models, tars_models, executions)
+- [x] **Task 2:** Engine module structure — types, errors, directory
+- [x] **Task 3:** RunPod client — HTTP wrapper with retry, status mapping
+- [x] **Task 4:** Input merger — merge user inputs with developer configOverrides
+- [x] **Task 5:** Engine core — submitJob, getJobStatus, cancelJob
+- [x] **Task 6:** Admin routes — CRUD for endpoints and base models
+- [x] **Task 7:** Developer routes — tars model create, configure, publish
+- [x] **Task 8:** Consumer routes — marketplace browse, run models, poll status
+- [x] **Task 9:** Seed script — initial data for dev/testing
+- [x] **Task 10:** Wire together — register routes, env vars, E2E test
+- [x] **Task 11:** Update API.md with all new endpoints
+- [x] **Bonus:** Unit tests (86%+ coverage, 726 tests)
+- [x] **Bonus:** Git hooks (Husky + lint-staged)
+- [x] **Bonus:** CI/CD pipeline (GitHub Actions)
 
-## Phase 4: Deploy & Test with Real RunPod
+## Phase 4: Deploy & Test with Real RunPod ← CURRENT
 
 - [ ] Deploy SDXL endpoint on RunPod Hub
 - [ ] Deploy Faster Whisper endpoint on RunPod Hub
@@ -105,14 +107,17 @@
 
 ## Decisions Log
 
-| Date       | Decision                                      | Context                                    |
-| ---------- | --------------------------------------------- | ------------------------------------------ |
-| 2026-01-19 | Use Fastify 5 over Express                    | Performance, TypeScript support, plugins   |
-| 2026-01-19 | Two Firebase projects for auth isolation       | Consumers and developers fully separated   |
-| 2026-01-20 | GCS for file storage (not local filesystem)    | Cloud Run is ephemeral                     |
-| 2026-02-11 | Switch from notebooks to RunPod engine         | Real GPU execution, marketplace model      |
-| 2026-02-11 | RunPod Serverless over GCP GPUs                | Simpler, cheaper, no infra management      |
-| 2026-02-11 | Shared endpoints for MVP (not dedicated)       | One SDXL endpoint serves all dev apps      |
-| 2026-02-11 | No warm pools for MVP                          | Accept 15-50s cold starts                  |
-| 2026-02-11 | Dynamic model catalog (DB, not code)           | Add models via admin API, zero deploys     |
-| 2026-02-11 | 3-file doc system (ARCHITECTURE + ROADMAP + TASK) | Agent-friendly, no doc sprawl           |
+| Date       | Decision                                          | Context                                  |
+| ---------- | ------------------------------------------------- | ---------------------------------------- |
+| 2026-01-19 | Use Fastify 5 over Express                        | Performance, TypeScript support, plugins |
+| 2026-01-19 | Two Firebase projects for auth isolation          | Consumers and developers fully separated |
+| 2026-01-20 | GCS for file storage (not local filesystem)       | Cloud Run is ephemeral                   |
+| 2026-02-11 | Switch from notebooks to RunPod engine            | Real GPU execution, marketplace model    |
+| 2026-02-11 | RunPod Serverless over GCP GPUs                   | Simpler, cheaper, no infra management    |
+| 2026-02-11 | Shared endpoints for MVP (not dedicated)          | One SDXL endpoint serves all dev apps    |
+| 2026-02-11 | No warm pools for MVP                             | Accept 15-50s cold starts                |
+| 2026-02-11 | Dynamic model catalog (DB, not code)              | Add models via admin API, zero deploys   |
+| 2026-02-11 | 3-file doc system (ARCHITECTURE + ROADMAP + TASK) | Agent-friendly, no doc sprawl            |
+| 2026-02-12 | 80%+ test coverage requirement                    | Code quality, regression prevention      |
+| 2026-02-12 | Husky + lint-staged for git hooks                 | Pre-commit lint, pre-push tests          |
+| 2026-02-12 | GitHub Actions CI/CD                              | Automated lint, test, build, deploy      |

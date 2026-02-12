@@ -1,9 +1,10 @@
-# TASK.md — Phase 3: Engine (RunPod Integration)
+# TASK.md — Phase 3: Engine (RunPod Integration) ✅ COMPLETE
 
+> **Status:** ✅ All tasks completed on February 12, 2026
 > **Repo:** tarsify-api
-> **Read first:** `README.md` (project architecture, coding conventions, file patterns)
-> **Update after:** `ROADMAP.md` (check off completed items), `API.md` (add new endpoints)
-> **Agent:** Complete tasks sequentially. Write tests for every service. Follow existing repo patterns.
+> **Next:** Phase 4 — Deploy & Test with Real RunPod
+>
+> This file can be archived or replaced with Phase 4 tasks.
 
 ## Code Principles
 
@@ -52,12 +53,14 @@ The current Prisma schema has an `Execution` model and `ExecutionStatus` enum ti
 ### 1a: Delete old execution model and enum
 
 In `prisma/schema.prisma`:
+
 1. Delete the `ExecutionStatus` enum entirely
 2. Delete the `Execution` model entirely
 3. Remove `executions Execution[]` relation from the `Consumer` model
 4. Remove `executions Execution[]` relation from the `Notebook` model
 
 Then grep the entire `src/` directory for any code importing or using `Execution` or `ExecutionStatus` from Prisma. Remove or comment out those references. This will likely affect:
+
 - Files in `src/routes/marketplace/` (consumer execution routes)
 - Any test files referencing executions
 - Shared types that re-export execution types
@@ -259,12 +262,14 @@ Create types.ts and errors.ts with the interfaces/classes described above.
 HTTP wrapper for RunPod Serverless API. Constructor takes `apiKey` and optional `baseUrl`.
 
 Methods:
+
 - `submitJob(endpointId, input)` → POST `/{endpointId}/run`
 - `submitJobSync(endpointId, input)` → POST `/{endpointId}/runsync`
 - `getJobStatus(endpointId, jobId)` → GET `/{endpointId}/status/{jobId}`
 - `cancelJob(endpointId, jobId)` → POST `/{endpointId}/cancel/{jobId}`
 
 Requirements:
+
 - Auth: `Authorization: Bearer {apiKey}`
 - Retry on 5xx: 2 retries, 1s delay between
 - Throw `RunPodError` on non-2xx (after retries exhausted)
@@ -284,6 +289,7 @@ Tests: mock fetch, test submit/status/cancel, retry logic, error handling.
 Pure function `mergeInputs(userInputs, configOverrides)` → merged payload.
 
 Rules (in order):
+
 1. Start with user inputs
 2. Apply `defaultInputs` for fields user didn't provide
 3. Override with `lockedInputs` (user can't change)
@@ -301,11 +307,13 @@ Tests: all merge scenarios, null/empty config, prompt wrapping, edge cases.
 **File:** `src/engine/index.ts`
 
 `createEngine(prisma, runpodApiKey)` factory returns:
+
 - `submitJob(input)` → JobHandle
 - `getJobStatus(executionId, consumerId)` → JobResult
 - `cancelJob(executionId, consumerId)` → void
 
 Key behaviors:
+
 - submitJob: load model chain from DB → merge inputs → create execution → call RunPod → return handle
 - getJobStatus: check DB cache first (terminal = return immediately) → else poll RunPod → update DB
 - cancelJob: verify ownership → call RunPod cancel → update DB
@@ -324,9 +332,11 @@ Tests: mock Prisma + RunPod client. Test full flows.
 Follow existing route module pattern exactly (look at `src/routes/studio/notebooks/`).
 
 ### Admin auth middleware
+
 `src/core/middleware/auth/adminAuth.ts` — developer auth + `ADMIN_UIDS` env var check.
 
 ### Endpoint routes
+
 ```
 POST   /api/admin/endpoints          — create
 GET    /api/admin/endpoints          — list (include base model count)
@@ -335,6 +345,7 @@ DELETE /api/admin/endpoints/:id      — soft delete
 ```
 
 ### Base model routes
+
 ```
 POST   /api/admin/base-models        — create (validate endpoint, slug, inputSchema)
 GET    /api/admin/base-models        — list (include endpoint info)
@@ -398,6 +409,7 @@ POST   /api/consumer/executions/:id/cancel  — engine.cancelJob()
 Seed RunPod endpoints + base models. Use env vars for real endpoint IDs, placeholders for missing ones.
 
 Seed at minimum:
+
 1. Chatterbox TTS endpoint + Text to Speech base model
 2. SDXL endpoint + Image Generator base model (placeholder if no endpoint ID)
 
@@ -421,6 +433,7 @@ Package.json script: `"seed:engine": "tsx src/scripts/seed-engine.ts"`
 ## TASK 11: Update API.md
 
 Add all new endpoints to `API.md` following the existing format:
+
 - Admin: endpoint CRUD, base model CRUD
 - Developer: base model browse, tars model CRUD + publish
 - Consumer: marketplace browse, run, poll, cancel
