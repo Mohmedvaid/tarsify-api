@@ -112,19 +112,19 @@
 
 ## Decisions Log
 
-| Date       | Decision                                          | Context                                  |
-| ---------- | ------------------------------------------------- | ---------------------------------------- |
-| 2026-01-19 | Use Fastify 5 over Express                        | Performance, TypeScript support, plugins |
-| 2026-01-19 | Two Firebase projects for auth isolation          | Consumers and developers fully separated |
-| 2026-01-20 | GCS for file storage (not local filesystem)       | Cloud Run is ephemeral                   |
-| 2026-02-11 | Switch from notebooks to RunPod engine            | Real GPU execution, marketplace model    |
-| 2026-02-11 | RunPod Serverless over GCP GPUs                   | Simpler, cheaper, no infra management    |
-| 2026-02-11 | Shared endpoints for MVP (not dedicated)          | One SDXL endpoint serves all dev apps    |
-| 2026-02-11 | No warm pools for MVP                             | Accept 15-50s cold starts                |
-| 2026-02-11 | Dynamic model catalog (DB, not code)              | Add models via admin API, zero deploys   |
-| 2026-02-11 | 3-file doc system (ARCHITECTURE + ROADMAP + TASK) | Agent-friendly, no doc sprawl            |
-| 2026-02-12 | 80%+ test coverage requirement                    | Code quality, regression prevention      |
-| 2026-02-12 | Husky + lint-staged for git hooks                 | Pre-commit lint, pre-push tests          |
-| 2026-02-12 | GitHub Actions CI/CD                              | Automated lint, test, build, deploy      |
+| Date       | Decision                                          | Context                                       |
+| ---------- | ------------------------------------------------- | --------------------------------------------- |
+| 2026-01-19 | Use Fastify 5 over Express                        | Performance, TypeScript support, plugins      |
+| 2026-01-19 | Two Firebase projects for auth isolation          | Consumers and developers fully separated      |
+| 2026-01-20 | GCS for file storage (not local filesystem)       | Cloud Run is ephemeral                        |
+| 2026-02-11 | Switch from notebooks to RunPod engine            | Real GPU execution, marketplace model         |
+| 2026-02-11 | RunPod Serverless over GCP GPUs                   | Simpler, cheaper, no infra management         |
+| 2026-02-11 | Shared endpoints for MVP (not dedicated)          | One SDXL endpoint serves all dev apps         |
+| 2026-02-11 | No warm pools for MVP                             | Accept 15-50s cold starts                     |
+| 2026-02-11 | Dynamic model catalog (DB, not code)              | Add models via admin API, zero deploys        |
+| 2026-02-11 | 3-file doc system (ARCHITECTURE + ROADMAP + TASK) | Agent-friendly, no doc sprawl                 |
+| 2026-02-12 | 80%+ test coverage requirement                    | Code quality, regression prevention           |
+| 2026-02-12 | Husky + lint-staged for git hooks                 | Pre-commit lint, pre-push tests               |
+| 2026-02-12 | GitHub Actions CI/CD                              | Automated lint, test, build, deploy           |
 | 2026-02-12 | RunPod endpoint IDs internal only                 | Never expose to frontend, use TarsModel slugs |
-| 2026-02-12 | Seed script for DB setup (no admin UI needed)     | Faster MVP, admin UI can come later      |
+| 2026-02-12 | Seed script for DB setup (no admin UI needed)     | Faster MVP, admin UI can come later           |
