@@ -1,8 +1,8 @@
 # Tarsify API Documentation
 
-> Version: 1.0.0  
+> Version: 1.1.0  
 > Base URL: `https://api.tarsify.com` (prod) | `http://localhost:8080` (dev)  
-> Last Updated: January 27, 2026
+> Last Updated: February 12, 2026
 
 ---
 
@@ -12,12 +12,15 @@
 | ----------------------- | -------------- |
 | Studio Auth             | ✅ Implemented |
 | Studio Notebooks        | ✅ Implemented |
+| Studio Tars Models      | ✅ Implemented |
 | Studio Analytics        | 🔮 Future      |
 | Studio Earnings/Payouts | 🔮 Future      |
 | Marketplace Auth        | ⏳ Phase 4     |
-| Marketplace Notebooks   | ⏳ Phase 4     |
-| Marketplace Runs        | ⏳ Phase 4     |
+| Marketplace Models      | ✅ Implemented |
+| Marketplace Runs        | ✅ Implemented |
 | Marketplace Credits     | ⏳ Phase 4     |
+| Admin Endpoints         | ✅ Implemented |
+| Admin Base Models       | ✅ Implemented |
 
 > **Legend:** ✅ Implemented | ⏳ Planned | 🔮 Future
 
@@ -32,10 +35,16 @@
 5. [Studio API (Developer)](#studio-api-developer) ✅
    - [Auth Endpoints](#auth-endpoints) ✅
    - [Notebook Endpoints](#notebook-endpoints) ✅
+   - [Tars Model Endpoints](#tars-model-endpoints) ✅
    - [Analytics Endpoints](#analytics-endpoints) 🔮
    - [Earnings Endpoints](#earnings-endpoints) 🔮
    - [Payout Endpoints](#payout-endpoints) 🔮
-6. [Marketplace API (Consumer)](#marketplace-api-consumer) ⏳
+6. [Marketplace API (Consumer)](#marketplace-api-consumer) ✅
+   - [Models Endpoints](#models-endpoints) ✅
+   - [Runs Endpoints](#runs-endpoints) ✅
+7. [Admin API](#admin-api) ✅
+   - [Endpoints Management](#endpoints-management) ✅
+   - [Base Models Management](#base-models-management) ✅
 
 ---
 
@@ -136,6 +145,21 @@ Authorization: Bearer <firebase-jwt-token>
 | `ERR_5001` | 500  | Internal server error |
 | `ERR_5002` | 503  | Service unavailable   |
 | `ERR_5003` | 504  | Gateway timeout       |
+
+### Engine & Tars Model Errors (55xx)
+
+| Code       | HTTP | Message                   |
+| ---------- | ---- | ------------------------- |
+| `ERR_5500` | 404  | Tars model not found      |
+| `ERR_5501` | 400  | Model not published       |
+| `ERR_5502` | 400  | Endpoint not active       |
+| `ERR_5503` | 409  | Slug already exists       |
+| `ERR_5504` | 400  | Invalid status transition |
+| `ERR_5505` | 404  | Execution not found       |
+| `ERR_5506` | 403  | Execution not owned       |
+| `ERR_5507` | 400  | Execution not cancellable |
+| `ERR_5508` | 404  | Base model not found      |
+| `ERR_5509` | 400  | Base model not active     |
 
 ---
 
@@ -692,6 +716,271 @@ Unpublish a notebook (remove from marketplace but keep data).
 
 ---
 
+### Tars Model Endpoints
+
+Tars Models are developer-configured AI models built on top of platform-provided base models.
+
+#### `POST /tars-models`
+
+Create a new Tars Model.
+
+**Auth:** Required (Developer)
+
+**Request Body:**
+
+```json
+{
+  "title": "Anime Art Generator",
+  "slug": "anime-art-generator",
+  "description": "Generate anime-style artwork from text prompts",
+  "baseModelId": "uuid-of-base-model",
+  "configOverrides": {
+    "style": "anime",
+    "default_steps": 30
+  }
+}
+```
+
+**Response:** `201 Created`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Anime Art Generator",
+    "slug": "anime-art-generator",
+    "description": "Generate anime-style artwork from text prompts",
+    "status": "DRAFT",
+    "configOverrides": { "style": "anime", "default_steps": 30 },
+    "baseModel": {
+      "id": "uuid",
+      "slug": "sdxl-text-to-image",
+      "name": "SDXL Text to Image",
+      "category": "IMAGE",
+      "outputType": "IMAGE"
+    },
+    "createdAt": "2026-01-20T00:00:00Z",
+    "updatedAt": "2026-01-20T00:00:00Z"
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5503` - Slug already exists
+- `ERR_5508` - Base model not found
+- `ERR_5509` - Base model not active
+
+---
+
+#### `GET /tars-models`
+
+List developer's Tars Models with pagination.
+
+**Auth:** Required
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | `1` | Page number |
+| `limit` | integer | `20` | Items per page (max 100) |
+| `status` | enum | - | Filter by `DRAFT`, `PUBLISHED`, `ARCHIVED` |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Anime Art Generator",
+      "slug": "anime-art-generator",
+      "status": "PUBLISHED",
+      "baseModel": {
+        "id": "uuid",
+        "slug": "sdxl-text-to-image",
+        "name": "SDXL Text to Image",
+        "category": "IMAGE",
+        "outputType": "IMAGE"
+      },
+      "createdAt": "2026-01-20T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "pages": 1
+  }
+}
+```
+
+---
+
+#### `GET /tars-models/:id`
+
+Get a specific Tars Model.
+
+**Auth:** Required
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Anime Art Generator",
+    "slug": "anime-art-generator",
+    "description": "Generate anime-style artwork",
+    "status": "PUBLISHED",
+    "configOverrides": { "style": "anime" },
+    "baseModel": {
+      "id": "uuid",
+      "slug": "sdxl-text-to-image",
+      "name": "SDXL Text to Image",
+      "category": "IMAGE",
+      "outputType": "IMAGE"
+    },
+    "publishedAt": "2026-01-20T00:00:00Z",
+    "createdAt": "2026-01-20T00:00:00Z",
+    "updatedAt": "2026-01-20T00:00:00Z"
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5500` - Tars model not found
+
+---
+
+#### `PUT /tars-models/:id`
+
+Update a Tars Model.
+
+**Auth:** Required
+
+**Request Body:**
+
+```json
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "configOverrides": { "style": "anime_v2" }
+}
+```
+
+**Response:** `200 OK`
+
+**Errors:**
+
+- `ERR_5500` - Tars model not found
+- `ERR_5503` - Slug already exists (if changing slug)
+
+---
+
+#### `DELETE /tars-models/:id`
+
+Delete a Tars Model.
+
+**Auth:** Required
+
+**Note:** Cannot delete published models. Archive first.
+
+**Response:** `204 No Content`
+
+**Errors:**
+
+- `ERR_5500` - Tars model not found
+- `ERR_5504` - Cannot delete published model
+
+---
+
+#### `POST /tars-models/:id/publish`
+
+Publish a Tars Model to the marketplace.
+
+**Auth:** Required
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "PUBLISHED",
+    "publishedAt": "2026-01-20T00:00:00Z"
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5504` - Model already published
+
+---
+
+#### `POST /tars-models/:id/archive`
+
+Archive a Tars Model (remove from marketplace).
+
+**Auth:** Required
+
+**Response:** `200 OK`
+
+**Errors:**
+
+- `ERR_5504` - Model already archived
+
+---
+
+#### `GET /base-models`
+
+List available base models for building Tars Models.
+
+**Auth:** Required
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `category` | enum | - | Filter by `IMAGE`, `AUDIO`, `TEXT`, `VIDEO`, `DOCUMENT` |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "slug": "sdxl-text-to-image",
+      "name": "SDXL Text to Image",
+      "description": "Generate high-quality images from text prompts",
+      "category": "IMAGE",
+      "outputType": "IMAGE",
+      "outputFormat": "png",
+      "inputSchema": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string", "title": "Prompt" },
+          "negative_prompt": { "type": "string", "title": "Negative Prompt" },
+          "width": { "type": "integer", "default": 1024 },
+          "height": { "type": "integer", "default": 1024 }
+        }
+      },
+      "estimatedSeconds": 15
+    }
+  ]
+}
+```
+
+---
+
 ### Analytics Endpoints
 
 #### `GET /analytics`
@@ -968,11 +1257,464 @@ Initialize Stripe Connect onboarding.
 
 ---
 
+## Marketplace API (Consumer)
+
+Base path: `/api/marketplace`
+
+Consumer-facing endpoints for browsing and running AI models.
+
+---
+
+### Models Endpoints
+
+#### `GET /models` 🔓
+
+List published AI models (public, no auth required).
+
+**Auth:** Not required
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | `1` | Page number |
+| `limit` | integer | `20` | Items per page (max 100) |
+| `category` | enum | - | Filter by `IMAGE`, `AUDIO`, `TEXT`, `VIDEO`, `DOCUMENT` |
+| `search` | string | - | Search by title/description |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Anime Art Generator",
+      "slug": "anime-art-generator",
+      "description": "Generate anime-style artwork from text prompts",
+      "category": "IMAGE",
+      "outputType": "IMAGE",
+      "outputFormat": "png",
+      "estimatedSeconds": 15,
+      "developer": {
+        "id": "uuid",
+        "name": "John Doe"
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 50
+  }
+}
+```
+
+---
+
+#### `GET /models/:slug` 🔓
+
+Get model details by slug (public, no auth required).
+
+**Auth:** Not required
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "title": "Anime Art Generator",
+    "slug": "anime-art-generator",
+    "description": "Generate anime-style artwork from text prompts",
+    "category": "IMAGE",
+    "outputType": "IMAGE",
+    "outputFormat": "png",
+    "estimatedSeconds": 15,
+    "inputSchema": {
+      "type": "object",
+      "required": ["prompt"],
+      "properties": {
+        "prompt": { "type": "string", "title": "Prompt", "maxLength": 2000 },
+        "negative_prompt": { "type": "string", "title": "Negative Prompt" },
+        "width": {
+          "type": "integer",
+          "default": 1024,
+          "enum": [512, 768, 1024]
+        },
+        "height": {
+          "type": "integer",
+          "default": 1024,
+          "enum": [512, 768, 1024]
+        }
+      }
+    },
+    "developer": {
+      "id": "uuid",
+      "name": "John Doe"
+    }
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5500` - Model not found
+
+---
+
+#### `POST /models/:slug/run`
+
+Run a model (execute AI job).
+
+**Auth:** Required (Consumer)
+
+**Request Body:**
+
+```json
+{
+  "inputs": {
+    "prompt": "a beautiful anime girl in a garden",
+    "negative_prompt": "ugly, blurry",
+    "width": 1024,
+    "height": 1024
+  }
+}
+```
+
+**Response:** `202 Accepted`
+
+```json
+{
+  "success": true,
+  "data": {
+    "executionId": "uuid",
+    "status": "PENDING",
+    "estimatedSeconds": 15
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5500` - Model not found
+- `ERR_5501` - Model not published
+- `ERR_5502` - Endpoint not active
+
+---
+
+### Runs Endpoints
+
+#### `GET /runs`
+
+List consumer's execution history.
+
+**Auth:** Required
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | `1` | Page number |
+| `limit` | integer | `20` | Items per page (max 100) |
+| `status` | enum | - | Filter by `PENDING`, `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED` |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "status": "COMPLETED",
+      "tarsModel": {
+        "id": "uuid",
+        "title": "Anime Art Generator",
+        "slug": "anime-art-generator"
+      },
+      "createdAt": "2026-01-20T00:00:00Z",
+      "completedAt": "2026-01-20T00:00:15Z",
+      "executionTimeMs": 14500
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 25
+  }
+}
+```
+
+---
+
+#### `GET /runs/:id`
+
+Get execution details.
+
+**Auth:** Required
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "COMPLETED",
+    "tarsModel": {
+      "id": "uuid",
+      "title": "Anime Art Generator",
+      "slug": "anime-art-generator"
+    },
+    "inputPayload": {
+      "prompt": "a beautiful anime girl"
+    },
+    "outputPayload": {
+      "output": "https://storage.tarsify.com/outputs/xxx.png"
+    },
+    "createdAt": "2026-01-20T00:00:00Z",
+    "completedAt": "2026-01-20T00:00:15Z",
+    "executionTimeMs": 14500
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5505` - Execution not found
+- `ERR_5506` - Execution not owned by this consumer
+
+---
+
+#### `GET /runs/:id/status`
+
+Poll execution status (lightweight endpoint for polling).
+
+**Auth:** Required
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sync` | boolean | `false` | If true, sync status from RunPod before returning |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "RUNNING",
+    "outputPayload": null,
+    "errorMessage": null,
+    "completedAt": null,
+    "executionTimeMs": null
+  }
+}
+```
+
+---
+
+#### `POST /runs/:id/cancel`
+
+Cancel a running execution.
+
+**Auth:** Required
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "status": "CANCELLED",
+    "message": "Execution cancelled"
+  }
+}
+```
+
+**Errors:**
+
+- `ERR_5505` - Execution not found
+- `ERR_5507` - Execution not cancellable (already completed/failed)
+
+---
+
+## Admin API
+
+Base path: `/api/admin`
+
+Platform administration endpoints. Requires developer auth + admin UID check.
+
+---
+
+### Endpoints Management
+
+#### `GET /endpoints`
+
+List all RunPod endpoints.
+
+**Auth:** Required (Admin)
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "runpodEndpointId": "sdxl-endpoint-001",
+      "name": "Stable Diffusion XL",
+      "source": "HUB",
+      "gpuType": "A100",
+      "isActive": true,
+      "createdAt": "2026-01-20T00:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+#### `POST /endpoints`
+
+Create a new RunPod endpoint.
+
+**Auth:** Required (Admin)
+
+**Request Body:**
+
+```json
+{
+  "runpodEndpointId": "my-custom-endpoint",
+  "name": "Custom Model Endpoint",
+  "source": "CUSTOM",
+  "dockerImage": "runpod/my-model:latest",
+  "gpuType": "A100",
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+---
+
+#### `PUT /endpoints/:id`
+
+Update an endpoint.
+
+**Auth:** Required (Admin)
+
+---
+
+#### `DELETE /endpoints/:id`
+
+Delete an endpoint.
+
+**Auth:** Required (Admin)
+
+**Response:** `204 No Content`
+
+---
+
+### Base Models Management
+
+#### `GET /base-models`
+
+List all base models.
+
+**Auth:** Required (Admin)
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "slug": "sdxl-text-to-image",
+      "name": "SDXL Text to Image",
+      "category": "IMAGE",
+      "outputType": "IMAGE",
+      "outputFormat": "png",
+      "estimatedSeconds": 15,
+      "isActive": true,
+      "endpoint": {
+        "id": "uuid",
+        "name": "Stable Diffusion XL"
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### `POST /base-models`
+
+Create a new base model.
+
+**Auth:** Required (Admin)
+
+**Request Body:**
+
+```json
+{
+  "endpointId": "uuid",
+  "slug": "my-base-model",
+  "name": "My Custom Base Model",
+  "description": "Description of the model",
+  "category": "IMAGE",
+  "inputSchema": {
+    "type": "object",
+    "required": ["prompt"],
+    "properties": {
+      "prompt": { "type": "string" }
+    }
+  },
+  "outputType": "IMAGE",
+  "outputFormat": "png",
+  "estimatedSeconds": 20,
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+---
+
+#### `PUT /base-models/:id`
+
+Update a base model.
+
+**Auth:** Required (Admin)
+
+---
+
+#### `DELETE /base-models/:id`
+
+Delete a base model.
+
+**Auth:** Required (Admin)
+
+**Response:** `204 No Content`
+
+---
+
 ## Changelog
 
-### v1.0.0 (2026-01-20)
+### v1.1.0 (2026-02-12)
 
-- Initial API documentation
+- Added Tars Model endpoints for developers
+- Added Marketplace Models API (browse & run)
+- Added Marketplace Runs API (execution history)
+- Added Admin API for endpoints and base models
+- Added Engine integration with RunPod
+- New error codes for engine operations (55xx)
 - Studio endpoints for developer authentication
 - Notebook CRUD operations
 - Analytics and earnings tracking

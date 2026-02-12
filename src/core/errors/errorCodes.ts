@@ -36,6 +36,13 @@ export const ERROR_CODES = {
   NOTEBOOK_ALREADY_EXISTS: 'ERR_5002',
   NOTEBOOK_INVALID_STATUS: 'ERR_5003',
 
+  // Tars Model Errors (55xx)
+  TARS_MODEL_NOT_FOUND: 'ERR_5500',
+  TARS_MODEL_SLUG_EXISTS: 'ERR_5501',
+  TARS_MODEL_INVALID_STATUS: 'ERR_5502',
+  BASE_MODEL_NOT_FOUND: 'ERR_5503',
+  BASE_MODEL_NOT_ACTIVE: 'ERR_5504',
+
   // Execution/Engine Errors (6xxx)
   EXECUTION_NOT_FOUND: 'ERR_6000',
   EXECUTION_FAILED: 'ERR_6001',
@@ -101,6 +108,12 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ERROR_CODES.NOTEBOOK_NOT_PUBLISHED]: 'Notebook is not published',
   [ERROR_CODES.NOTEBOOK_ALREADY_EXISTS]: 'Notebook already exists',
   [ERROR_CODES.NOTEBOOK_INVALID_STATUS]: 'Invalid notebook status',
+
+  [ERROR_CODES.TARS_MODEL_NOT_FOUND]: 'Tars model not found',
+  [ERROR_CODES.TARS_MODEL_SLUG_EXISTS]: 'Tars model slug already exists',
+  [ERROR_CODES.TARS_MODEL_INVALID_STATUS]: 'Invalid tars model status',
+  [ERROR_CODES.BASE_MODEL_NOT_FOUND]: 'Base model not found',
+  [ERROR_CODES.BASE_MODEL_NOT_ACTIVE]: 'Base model is not active',
 
   [ERROR_CODES.EXECUTION_NOT_FOUND]: 'Execution not found',
   [ERROR_CODES.EXECUTION_FAILED]: 'Execution failed',

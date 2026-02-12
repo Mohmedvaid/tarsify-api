@@ -28,6 +28,12 @@ export default defineConfig({
         '**/*.test.ts',
         '**/types/**',
         '**/index.ts',
+        // Config and infrastructure files
+        'eslint.config.js',
+        'vitest.config.ts',
+        'tsup.config.ts',
+        'prisma/seed.ts',
+        'src/server.ts', // Entry point
       ],
     },
     setupFiles: ['./tests/setup.ts'],

@@ -1,269 +1,214 @@
 /**
  * Runs Service
- * Business logic for notebook execution
- * MVP: Mock execution that simulates notebook runs
+ * Business logic for consumer model execution
+ * Uses the Engine module to submit and manage jobs
  */
 import { prisma } from '@/lib/prisma';
+import { createEngine, type Engine } from '@/engine';
+import { env } from '@/config/env';
+import type { Prisma } from '@prisma/client';
 import type { Consumer } from '@prisma/client';
-import {
-  executionRepository,
-  type ExecutionWithNotebook,
-} from '@/repositories';
-import {
-  getComputeTierDisplay,
-  getCategoryDisplay,
-  getExecutionStatusDisplay,
-} from '@/config/consumer';
-import { PAGINATION } from '@/config/constants';
-import { AppError } from '@/core/errors';
-import { ERROR_CODES } from '@/core/errors/errorCodes';
-import { HTTP_STATUS } from '@/config/constants';
+import type { ListRunsQuery, RunModelInput } from './runs.schemas';
+import { NotFoundError } from '@/core/errors';
 import { logger } from '@/lib/logger';
-import type {
-  ListRunsQuery,
-  RunResponse,
-  RunStartedResponse,
-} from './runs.schemas';
 
-/**
- * Transform execution to run response
- */
-function toRunResponse(execution: ExecutionWithNotebook): RunResponse {
-  return {
-    id: execution.id,
-    status: execution.status,
-    statusDisplay: getExecutionStatusDisplay(execution.status),
-    creditsCharged: execution.creditsCharged,
-    computeTier: execution.gpuUsed,
-    computeTierDisplay: execution.gpuUsed ? getComputeTierDisplay(execution.gpuUsed) : 'Unknown',
-    startedAt: execution.startedAt?.toISOString() ?? null,
-    completedAt: execution.completedAt?.toISOString() ?? null,
-    outputUrl: execution.outputUrl,
-    errorMessage: execution.errorMessage,
-    createdAt: execution.createdAt.toISOString(),
-    notebook: {
-      id: execution.notebook.id,
-      title: execution.notebook.title,
-      shortDescription: execution.notebook.shortDescription,
-      thumbnailUrl: execution.notebook.thumbnailUrl,
-      category: execution.notebook.category,
-      categoryDisplay: getCategoryDisplay(execution.notebook.category),
-      developer: {
-        id: execution.notebook.developer.id,
-        name: execution.notebook.developer.name,
+// ============================================
+// Prisma Include Configuration
+// ============================================
+
+const executionInclude = {
+  tarsModel: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      baseModel: {
+        select: {
+          name: true,
+          category: true,
+          outputType: true,
+        },
       },
     },
+  },
+} as const;
+
+type ExecutionWithModel = Prisma.ExecutionGetPayload<{
+  include: typeof executionInclude;
+}>;
+
+interface PaginatedResult {
+  items: ExecutionWithModel[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+// ============================================
+// Create Engine Instance
+// ============================================
+
+function getEngine(): Engine {
+  if (!env.RUNPOD_API_KEY) {
+    throw new Error('RUNPOD_API_KEY is not configured');
+  }
+  return createEngine(prisma, env.RUNPOD_API_KEY);
+}
+
+// ============================================
+// Service Functions
+// ============================================
+
+/**
+ * Run a TarsModel
+ * Creates an execution and submits to RunPod
+ */
+export async function runModel(
+  consumer: Consumer,
+  modelSlug: string,
+  input: RunModelInput
+): Promise<{ executionId: string; status: string; message: string }> {
+  const engine = getEngine();
+
+  // Engine handles validation, credit checks (future), and job submission
+  const jobHandle = await engine.submitJob({
+    consumerId: consumer.id,
+    tarsModelSlug: modelSlug,
+    userInputs: input.inputs,
+  });
+
+  logger.info(
+    {
+      executionId: jobHandle.executionId,
+      consumerId: consumer.id,
+      modelSlug,
+    },
+    'Model run started'
+  );
+
+  return {
+    executionId: jobHandle.executionId,
+    status: jobHandle.status,
+    message: 'Run started successfully',
   };
 }
 
 /**
- * Runs Service
+ * Get a specific execution
  */
-export const runsService = {
-  /**
-   * Start a notebook run
-   * Deducts credits and creates execution record
-   * MVP: Simulates execution completion after a delay
-   */
-  async runNotebook(
-    consumer: Consumer,
-    notebookId: string
-  ): Promise<{ data: RunStartedResponse }> {
-    // Get notebook to check it exists and get price
-    const notebook = await prisma.notebook.findUnique({
-      where: { id: notebookId },
-    });
+export async function getExecution(
+  consumer: Consumer,
+  executionId: string
+): Promise<ExecutionWithModel> {
+  const execution = await prisma.execution.findFirst({
+    where: {
+      id: executionId,
+      consumerId: consumer.id,
+    },
+    include: executionInclude,
+  });
 
-    if (!notebook) {
-      throw new AppError(
-        ERROR_CODES.NOTEBOOK_NOT_FOUND,
-        'Notebook not found',
-        HTTP_STATUS.NOT_FOUND
-      );
-    }
+  if (!execution) {
+    throw new NotFoundError('Execution not found');
+  }
 
-    if (notebook.status !== 'published') {
-      throw new AppError(
-        ERROR_CODES.NOTEBOOK_NOT_PUBLISHED,
-        'This notebook is not available',
-        HTTP_STATUS.BAD_REQUEST
-      );
-    }
-
-    // Check consumer has enough credits
-    if (consumer.creditsBalance < notebook.priceCredits) {
-      throw new AppError(
-        ERROR_CODES.INSUFFICIENT_CREDITS,
-        `Insufficient credits. You need ${notebook.priceCredits} credits but have ${consumer.creditsBalance}`,
-        HTTP_STATUS.BAD_REQUEST,
-        {
-          required: notebook.priceCredits,
-          available: consumer.creditsBalance,
-        }
-      );
-    }
-
-    // Deduct credits and create execution in a transaction
-    const [execution, updatedConsumer] = await prisma.$transaction(async (tx) => {
-      // Deduct credits
-      const updated = await tx.consumer.update({
-        where: { id: consumer.id },
-        data: {
-          creditsBalance: {
-            decrement: notebook.priceCredits,
-          },
-        },
-      });
-
-      // Create execution
-      const exec = await tx.execution.create({
-        data: {
-          consumerId: consumer.id,
-          notebookId: notebook.id,
-          creditsCharged: notebook.priceCredits,
-          gpuUsed: notebook.gpuType,
-          status: 'pending',
-        },
-      });
-
-      // Increment notebook run count
-      await tx.notebook.update({
-        where: { id: notebook.id },
-        data: {
-          totalRuns: {
-            increment: 1,
-          },
-        },
-      });
-
-      return [exec, updated];
-    });
-
-    logger.info(
-      {
-        executionId: execution.id,
-        consumerId: consumer.id,
-        notebookId: notebook.id,
-        creditsCharged: notebook.priceCredits,
-      },
-      'Notebook run started'
-    );
-
-    // MVP: Simulate execution in background
-    // In production, this would queue a job to RunPod
-    simulateExecution(execution.id);
-
-    return {
-      data: {
-        id: execution.id,
-        status: execution.status,
-        statusDisplay: getExecutionStatusDisplay(execution.status),
-        creditsCharged: execution.creditsCharged,
-        message: 'Run started successfully',
-        remainingCredits: updatedConsumer.creditsBalance,
-      },
-    };
-  },
-
-  /**
-   * Get a specific run
-   */
-  async getRun(
-    consumer: Consumer,
-    runId: string
-  ): Promise<{ data: RunResponse }> {
-    const execution = await executionRepository.findByIdWithNotebook(runId);
-
-    if (!execution) {
-      throw new AppError(
-        ERROR_CODES.EXECUTION_NOT_FOUND,
-        'Run not found',
-        HTTP_STATUS.NOT_FOUND
-      );
-    }
-
-    // Ensure consumer owns this execution
-    if (execution.consumerId !== consumer.id) {
-      throw new AppError(
-        ERROR_CODES.EXECUTION_NOT_FOUND,
-        'Run not found',
-        HTTP_STATUS.NOT_FOUND
-      );
-    }
-
-    return { data: toRunResponse(execution) };
-  },
-
-  /**
-   * List consumer's runs
-   */
-  async listRuns(
-    consumer: Consumer,
-    query: ListRunsQuery
-  ): Promise<{
-    data: RunResponse[];
-    meta: { page: number; limit: number; total: number; totalPages: number };
-  }> {
-    const page = query.page ?? PAGINATION.DEFAULT_PAGE;
-    const limit = query.limit ?? PAGINATION.DEFAULT_LIMIT;
-
-    const { data, total } = await executionRepository.listByConsumer(consumer.id, {
-      page,
-      limit,
-      status: query.status,
-    });
-
-    return {
-      data: data.map(toRunResponse),
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  },
-};
+  return execution;
+}
 
 /**
- * Simulate notebook execution (MVP)
- * In production, this would be replaced with actual RunPod execution
+ * List consumer's executions with pagination
  */
-async function simulateExecution(executionId: string): Promise<void> {
-  try {
-    // Update to running after 1 second
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await executionRepository.updateStatus(executionId, 'running', {
-      startedAt: new Date(),
-    });
+export async function listExecutions(
+  consumer: Consumer,
+  query: ListRunsQuery
+): Promise<PaginatedResult> {
+  const { page, limit, status } = query;
+  const skip = (page - 1) * limit;
 
-    logger.debug({ executionId }, 'Execution started (simulated)');
+  const where = {
+    consumerId: consumer.id,
+    ...(status && { status }),
+  };
 
-    // Simulate processing time (3-5 seconds)
-    const processingTime = 3000 + Math.random() * 2000;
-    await new Promise((resolve) => setTimeout(resolve, processingTime));
+  const [executions, total] = await Promise.all([
+    prisma.execution.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: executionInclude,
+    }),
+    prisma.execution.count({ where }),
+  ]);
 
-    // 90% success rate for demo
-    const success = Math.random() > 0.1;
+  return {
+    items: executions,
+    total,
+    page,
+    limit,
+    pages: Math.ceil(total / limit),
+  };
+}
 
-    if (success) {
-      await executionRepository.updateStatus(executionId, 'completed', {
-        completedAt: new Date(),
-        outputUrl: `https://storage.tarsify.com/outputs/${executionId}/result.json`,
-      });
-      logger.info({ executionId }, 'Execution completed (simulated)');
-    } else {
-      await executionRepository.updateStatus(executionId, 'failed', {
-        completedAt: new Date(),
-        errorMessage: 'Simulated execution failure for testing',
-      });
-      logger.warn({ executionId }, 'Execution failed (simulated)');
-    }
-  } catch (error) {
-    logger.error({ executionId, error }, 'Error in simulated execution');
-    await executionRepository.updateStatus(executionId, 'failed', {
-      completedAt: new Date(),
-      errorMessage: 'Internal execution error',
-    });
+/**
+ * Cancel an execution
+ */
+export async function cancelExecution(
+  consumer: Consumer,
+  executionId: string
+): Promise<ExecutionWithModel> {
+  const engine = getEngine();
+
+  // Engine handles ownership check and cancellation
+  await engine.cancelJob(executionId, consumer.id);
+
+  // Fetch the updated execution
+  const execution = await prisma.execution.findUnique({
+    where: { id: executionId },
+    include: executionInclude,
+  });
+
+  if (!execution) {
+    throw new NotFoundError('Execution not found');
   }
+
+  logger.info(
+    {
+      executionId,
+      consumerId: consumer.id,
+    },
+    'Execution cancelled'
+  );
+
+  return execution;
+}
+
+/**
+ * Poll execution status (useful for polling endpoint)
+ * Optionally syncs with RunPod for fresh status
+ */
+export async function pollExecution(
+  consumer: Consumer,
+  executionId: string,
+  sync: boolean = false
+): Promise<ExecutionWithModel> {
+  if (sync) {
+    const engine = getEngine();
+    await engine.getJobStatus(executionId, consumer.id);
+  }
+
+  const execution = await prisma.execution.findFirst({
+    where: {
+      id: executionId,
+      consumerId: consumer.id,
+    },
+    include: executionInclude,
+  });
+
+  if (!execution) {
+    throw new NotFoundError('Execution not found');
+  }
+
+  return execution;
 }

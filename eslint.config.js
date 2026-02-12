@@ -26,6 +26,12 @@ export default [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         NodeJS: 'readonly',
+        // Node.js 18+ fetch API
+        fetch: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        Headers: 'readonly',
+        RequestInit: 'readonly',
       },
     },
     plugins: {
@@ -67,6 +73,9 @@ export default [
         vi: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        global: 'readonly',
+        globalThis: 'readonly',
+        fetch: 'readonly',
       },
     },
     plugins: {
@@ -75,6 +84,7 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off',
     },
   },
   prettier,

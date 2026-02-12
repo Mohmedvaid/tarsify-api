@@ -8,6 +8,12 @@ import {
   NotFoundError,
   UnauthorizedError,
   ForbiddenError,
+  ConflictError,
+  RateLimitError,
+  ServiceUnavailableError,
+  DatabaseError,
+  ExternalServiceError,
+  BusinessError,
   ERROR_CODES,
 } from '../../src/core/errors/index';
 import { HTTP_STATUS } from '../../src/config/constants';
@@ -119,6 +125,119 @@ describe('Error Classes', () => {
       expect(error.code).toBe(ERROR_CODES.FORBIDDEN);
       expect(error.statusCode).toBe(HTTP_STATUS.FORBIDDEN);
       expect(error.message).toBe('Not allowed');
+    });
+
+    it('should use default message', () => {
+      const error = new ForbiddenError();
+
+      expect(error.message).toBe('Access denied');
+    });
+  });
+
+  describe('ConflictError', () => {
+    it('should create conflict error', () => {
+      const error = new ConflictError('Resource already exists');
+
+      expect(error.statusCode).toBe(HTTP_STATUS.CONFLICT);
+      expect(error.message).toBe('Resource already exists');
+    });
+
+    it('should accept custom error code', () => {
+      const error = new ConflictError(
+        'Duplicate entry',
+        ERROR_CODES.DEVELOPER_ALREADY_EXISTS
+      );
+
+      expect(error.code).toBe(ERROR_CODES.DEVELOPER_ALREADY_EXISTS);
+    });
+  });
+
+  describe('RateLimitError', () => {
+    it('should create rate limit error', () => {
+      const error = new RateLimitError();
+
+      expect(error.code).toBe(ERROR_CODES.RATE_LIMITED);
+      expect(error.statusCode).toBe(HTTP_STATUS.TOO_MANY_REQUESTS);
+    });
+
+    it('should include retry after', () => {
+      const error = new RateLimitError(60);
+
+      expect(error.details).toEqual({ retryAfter: 60 });
+    });
+  });
+
+  describe('ServiceUnavailableError', () => {
+    it('should create service unavailable error', () => {
+      const error = new ServiceUnavailableError('Database');
+
+      expect(error.code).toBe(ERROR_CODES.SERVICE_UNAVAILABLE);
+      expect(error.statusCode).toBe(HTTP_STATUS.SERVICE_UNAVAILABLE);
+      expect(error.message).toBe('Database is temporarily unavailable');
+    });
+  });
+
+  describe('DatabaseError', () => {
+    it('should create database error', () => {
+      const error = new DatabaseError();
+
+      expect(error.code).toBe(ERROR_CODES.DATABASE_ERROR);
+      expect(error.statusCode).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      expect(error.isOperational).toBe(false);
+    });
+
+    it('should accept custom message and details', () => {
+      const error = new DatabaseError('Connection failed', {
+        host: 'localhost',
+      });
+
+      expect(error.message).toBe('Connection failed');
+      expect(error.details).toEqual({ host: 'localhost' });
+    });
+  });
+
+  describe('ExternalServiceError', () => {
+    it('should create external service error', () => {
+      const error = new ExternalServiceError(
+        'RunPod',
+        ERROR_CODES.RUNPOD_ERROR
+      );
+
+      expect(error.code).toBe(ERROR_CODES.RUNPOD_ERROR);
+      expect(error.statusCode).toBe(HTTP_STATUS.BAD_GATEWAY);
+      expect(error.isOperational).toBe(false);
+    });
+
+    it('should accept custom message and details', () => {
+      const error = new ExternalServiceError(
+        'RunPod',
+        ERROR_CODES.RUNPOD_ERROR,
+        'API timeout',
+        { endpoint: 'submit' }
+      );
+
+      expect(error.message).toBe('API timeout');
+      expect(error.details).toEqual({ endpoint: 'submit' });
+    });
+  });
+
+  describe('BusinessError', () => {
+    it('should create business logic error', () => {
+      const error = new BusinessError(ERROR_CODES.INSUFFICIENT_CREDITS);
+
+      expect(error.code).toBe(ERROR_CODES.INSUFFICIENT_CREDITS);
+      expect(error.statusCode).toBe(HTTP_STATUS.UNPROCESSABLE_ENTITY);
+    });
+
+    it('should accept message and details', () => {
+      const error = new BusinessError(
+        ERROR_CODES.INSUFFICIENT_CREDITS,
+        'Not enough credits',
+        { required: 100, available: 50 }
+      );
+
+      expect(error.message).toBe('Not enough credits');
+      expect(error.details).toEqual({ required: 100, available: 50 });
     });
   });
 });

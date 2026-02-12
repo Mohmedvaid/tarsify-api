@@ -9,6 +9,8 @@ import {
   isDefined,
   slugify,
   sanitize,
+  sleep,
+  retry,
 } from '../../src/shared/utils/index';
 
 describe('Utility Functions', () => {
@@ -117,7 +119,66 @@ describe('Utility Functions', () => {
     });
 
     it('should remove angle brackets', () => {
-      expect(sanitize('<script>alert(1)</script>')).toBe('scriptalert(1)/script');
+      expect(sanitize('<script>alert(1)</script>')).toBe(
+        'scriptalert(1)/script'
+      );
+    });
+  });
+
+  describe('sleep', () => {
+    it('should wait for specified milliseconds', async () => {
+      const start = Date.now();
+      await sleep(50);
+      const elapsed = Date.now() - start;
+      expect(elapsed).toBeGreaterThanOrEqual(45); // Allow some tolerance
+    });
+  });
+
+  describe('retry', () => {
+    it('should succeed on first attempt', async () => {
+      let attempts = 0;
+      const result = await retry(
+        async () => {
+          attempts++;
+          return 'success';
+        },
+        { maxAttempts: 3, initialDelay: 10 }
+      );
+
+      expect(result).toBe('success');
+      expect(attempts).toBe(1);
+    });
+
+    it('should retry on failure and succeed', async () => {
+      let attempts = 0;
+      const result = await retry(
+        async () => {
+          attempts++;
+          if (attempts < 3) {
+            throw new Error('Temporary failure');
+          }
+          return 'success';
+        },
+        { maxAttempts: 3, initialDelay: 10 }
+      );
+
+      expect(result).toBe('success');
+      expect(attempts).toBe(3);
+    });
+
+    it('should throw after max attempts', async () => {
+      let attempts = 0;
+      await expect(
+        retry(
+          async () => {
+            attempts++;
+            throw new Error('Permanent failure');
+          },
+          { maxAttempts: 3, initialDelay: 10 }
+        )
+      ).rejects.toThrow('Permanent failure');
+
+      expect(attempts).toBe(3);
     });
   });
 });

@@ -9,7 +9,9 @@ import {
   CREDIT_PRICING,
   DISPLAY_LABELS,
   getComputeTierDisplay,
+  getComputeTierInfo,
   getCategoryDisplay,
+  getCategoryInfo,
   formatCredits,
 } from './consumer';
 
@@ -23,7 +25,7 @@ describe('Consumer Config', () => {
     });
 
     it('should have required properties for each tier', () => {
-      Object.values(COMPUTE_TIERS).forEach(tier => {
+      Object.values(COMPUTE_TIERS).forEach((tier) => {
         expect(tier.key).toBeDefined();
         expect(tier.displayName).toBeDefined();
         expect(tier.description).toBeDefined();
@@ -43,7 +45,7 @@ describe('Consumer Config', () => {
     });
 
     it('should have required properties for each category', () => {
-      Object.values(CATEGORIES).forEach(category => {
+      Object.values(CATEGORIES).forEach((category) => {
         expect(category.key).toBeDefined();
         expect(category.displayName).toBeDefined();
         expect(category.description).toBeDefined();
@@ -67,7 +69,7 @@ describe('Consumer Config', () => {
     });
 
     it('should have required properties for each package', () => {
-      CREDIT_PRICING.PACKAGES.forEach(pkg => {
+      CREDIT_PRICING.PACKAGES.forEach((pkg) => {
         expect(pkg.credits).toBeGreaterThan(0);
         expect(pkg.priceCents).toBeGreaterThan(0);
         expect(pkg.label).toBeDefined();
@@ -121,6 +123,45 @@ describe('Consumer Config', () => {
 
     it('should handle empty string', () => {
       expect(getCategoryDisplay('')).toBe('');
+    });
+  });
+
+  describe('getComputeTierInfo', () => {
+    it('should return full info for valid GPU type', () => {
+      const info = getComputeTierInfo('T4');
+      expect(info.key).toBe('T4');
+      expect(info.displayName).toBe('Standard');
+      expect(info.description).toBeDefined();
+      expect(info.icon).toBeDefined();
+      expect(info.sortOrder).toBeDefined();
+    });
+
+    it('should return fallback info for unknown GPU type', () => {
+      const info = getComputeTierInfo('UNKNOWN_GPU');
+      expect(info.key).toBe('UNKNOWN_GPU');
+      expect(info.displayName).toBe('UNKNOWN_GPU');
+      expect(info.description).toBe('');
+      expect(info.icon).toBe('⚡');
+      expect(info.sortOrder).toBe(99);
+    });
+  });
+
+  describe('getCategoryInfo', () => {
+    it('should return full info for valid category', () => {
+      const info = getCategoryInfo('image');
+      expect(info.key).toBe('image');
+      expect(info.displayName).toBe('Image & Photos');
+      expect(info.description).toBeDefined();
+      expect(info.icon).toBeDefined();
+    });
+
+    it('should return fallback info for unknown category', () => {
+      const info = getCategoryInfo('unknown_category');
+      expect(info.key).toBe('unknown_category');
+      expect(info.displayName).toBe('unknown_category');
+      expect(info.description).toBe('');
+      expect(info.icon).toBe('🔮');
+      expect(info.sortOrder).toBe(99);
     });
   });
 
