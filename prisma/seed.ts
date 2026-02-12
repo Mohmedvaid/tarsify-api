@@ -1,6 +1,9 @@
 /**
  * Prisma Seed Script
- * Seeds RunPod endpoints and base models for development
+ * Seeds RunPod endpoints and base models for development/production
+ *
+ * IMPORTANT: RunPod endpoint IDs are internal and never exposed to consumers.
+ * Consumers only interact with TarsModel slugs. The engine maps internally.
  *
  * Run with: npm run db:seed
  */
@@ -12,77 +15,54 @@ async function main(): Promise<void> {
   console.log('🌱 Seeding database...');
 
   // ============================================
-  // RUNPOD ENDPOINTS
+  // RUNPOD ENDPOINTS (Real IDs - DO NOT EXPOSE)
   // ============================================
 
   console.log('📡 Creating RunPod endpoints...');
 
+  // SDXL Image Generation
   const sdxlEndpoint = await prisma.runpodEndpoint.upsert({
-    where: { runpodEndpointId: 'sdxl-endpoint-001' },
-    update: {},
+    where: { runpodEndpointId: 'qr7wla851k3zrz' },
+    update: { isActive: true },
     create: {
-      runpodEndpointId: 'sdxl-endpoint-001',
+      runpodEndpointId: 'qr7wla851k3zrz',
       name: 'Stable Diffusion XL',
       source: 'HUB',
-      dockerImage: 'runpod/stable-diffusion-xl:latest',
-      gpuType: 'A100',
+      dockerImage: 'runpod/stable-diffusion:sdxl',
+      gpuType: 'A40',
       isActive: true,
     },
   });
 
+  // Chatterbox TTS (Text to Speech)
+  const chatterboxEndpoint = await prisma.runpodEndpoint.upsert({
+    where: { runpodEndpointId: '9ib1e8vvtjxrwh' },
+    update: { isActive: true },
+    create: {
+      runpodEndpointId: '9ib1e8vvtjxrwh',
+      name: 'Chatterbox TTS',
+      source: 'HUB',
+      dockerImage: 'runpod/chatterbox-tts:latest',
+      gpuType: 'T4',
+      isActive: true,
+    },
+  });
+
+  // Faster Whisper (Speech to Text)
   const whisperEndpoint = await prisma.runpodEndpoint.upsert({
-    where: { runpodEndpointId: 'whisper-endpoint-001' },
-    update: {},
+    where: { runpodEndpointId: '352hhvj1y6v8f6' },
+    update: { isActive: true },
     create: {
-      runpodEndpointId: 'whisper-endpoint-001',
-      name: 'Whisper Large V3',
+      runpodEndpointId: '352hhvj1y6v8f6',
+      name: 'Faster Whisper',
       source: 'HUB',
-      dockerImage: 'runpod/whisper-large-v3:latest',
+      dockerImage: 'runpod/faster-whisper:large-v3',
       gpuType: 'T4',
       isActive: true,
     },
   });
 
-  const llamaEndpoint = await prisma.runpodEndpoint.upsert({
-    where: { runpodEndpointId: 'llama-endpoint-001' },
-    update: {},
-    create: {
-      runpodEndpointId: 'llama-endpoint-001',
-      name: 'Llama 3.1 70B',
-      source: 'HUB',
-      dockerImage: 'runpod/llama-3.1-70b:latest',
-      gpuType: 'A100',
-      isActive: true,
-    },
-  });
-
-  const fluxEndpoint = await prisma.runpodEndpoint.upsert({
-    where: { runpodEndpointId: 'flux-endpoint-001' },
-    update: {},
-    create: {
-      runpodEndpointId: 'flux-endpoint-001',
-      name: 'FLUX.1 Schnell',
-      source: 'HUB',
-      dockerImage: 'runpod/flux-schnell:latest',
-      gpuType: 'L4',
-      isActive: true,
-    },
-  });
-
-  const musicGenEndpoint = await prisma.runpodEndpoint.upsert({
-    where: { runpodEndpointId: 'musicgen-endpoint-001' },
-    update: {},
-    create: {
-      runpodEndpointId: 'musicgen-endpoint-001',
-      name: 'MusicGen Large',
-      source: 'HUB',
-      dockerImage: 'runpod/musicgen-large:latest',
-      gpuType: 'T4',
-      isActive: true,
-    },
-  });
-
-  console.log(`  ✓ Created ${5} RunPod endpoints`);
+  console.log(`  ✓ Created 3 active RunPod endpoints`);
 
   // ============================================
   // BASE MODELS
@@ -228,72 +208,16 @@ async function main(): Promise<void> {
     },
   });
 
-  // FLUX Text-to-Image (fast)
-  await prisma.baseModel.upsert({
-    where: { slug: 'flux-schnell' },
-    update: {},
-    create: {
-      endpointId: fluxEndpoint.id,
-      slug: 'flux-schnell',
-      name: 'FLUX.1 Schnell',
-      description:
-        'Ultra-fast image generation with FLUX. Generates images in 1-4 steps.',
-      category: 'IMAGE',
-      inputSchema: {
-        type: 'object',
-        required: ['prompt'],
-        properties: {
-          prompt: {
-            type: 'string',
-            title: 'Prompt',
-            description: 'Text description of the image',
-            minLength: 1,
-            maxLength: 2000,
-          },
-          width: {
-            type: 'integer',
-            title: 'Width',
-            default: 1024,
-            enum: [512, 768, 1024, 1280],
-          },
-          height: {
-            type: 'integer',
-            title: 'Height',
-            default: 1024,
-            enum: [512, 768, 1024, 1280],
-          },
-          num_inference_steps: {
-            type: 'integer',
-            title: 'Steps',
-            description: 'FLUX recommends 1-4 steps',
-            default: 4,
-            minimum: 1,
-            maximum: 8,
-          },
-          seed: {
-            type: 'integer',
-            title: 'Seed',
-            default: -1,
-          },
-        },
-      },
-      outputType: 'IMAGE',
-      outputFormat: 'png',
-      estimatedSeconds: 5,
-      isActive: true,
-    },
-  });
-
-  // Whisper Transcription
+  // Whisper Transcription (Speech to Text)
   await prisma.baseModel.upsert({
     where: { slug: 'whisper-transcribe' },
     update: {},
     create: {
       endpointId: whisperEndpoint.id,
       slug: 'whisper-transcribe',
-      name: 'Whisper Transcription',
+      name: 'Faster Whisper Transcription',
       description:
-        'Transcribe audio files to text using OpenAI Whisper Large V3.',
+        'Transcribe audio files to text using Faster Whisper Large V3. Supports 100+ languages.',
       category: 'AUDIO',
       inputSchema: {
         type: 'object',
@@ -345,138 +269,71 @@ async function main(): Promise<void> {
     },
   });
 
-  // Llama Chat
+  // Chatterbox Text to Speech
   await prisma.baseModel.upsert({
-    where: { slug: 'llama-chat' },
+    where: { slug: 'chatterbox-tts' },
     update: {},
     create: {
-      endpointId: llamaEndpoint.id,
-      slug: 'llama-chat',
-      name: 'Llama 3.1 Chat',
+      endpointId: chatterboxEndpoint.id,
+      slug: 'chatterbox-tts',
+      name: 'Chatterbox Text to Speech',
       description:
-        'Advanced conversational AI using Meta Llama 3.1 70B Instruct.',
-      category: 'TEXT',
-      inputSchema: {
-        type: 'object',
-        required: ['prompt'],
-        properties: {
-          prompt: {
-            type: 'string',
-            title: 'Prompt',
-            description: 'Your message or question',
-            minLength: 1,
-            maxLength: 8000,
-          },
-          system_prompt: {
-            type: 'string',
-            title: 'System Prompt',
-            description: 'Instructions for how the AI should behave',
-            maxLength: 4000,
-          },
-          max_tokens: {
-            type: 'integer',
-            title: 'Max Tokens',
-            description: 'Maximum length of response',
-            default: 1024,
-            minimum: 64,
-            maximum: 4096,
-          },
-          temperature: {
-            type: 'number',
-            title: 'Temperature',
-            description: 'Creativity level (0=focused, 1=creative)',
-            default: 0.7,
-            minimum: 0,
-            maximum: 2,
-          },
-          top_p: {
-            type: 'number',
-            title: 'Top P',
-            description: 'Nucleus sampling parameter',
-            default: 0.9,
-            minimum: 0,
-            maximum: 1,
-          },
-        },
-      },
-      outputType: 'TEXT',
-      outputFormat: 'text',
-      estimatedSeconds: 20,
-      isActive: true,
-    },
-  });
-
-  // MusicGen
-  await prisma.baseModel.upsert({
-    where: { slug: 'musicgen-melody' },
-    update: {},
-    create: {
-      endpointId: musicGenEndpoint.id,
-      slug: 'musicgen-melody',
-      name: 'MusicGen Melody',
-      description: 'Generate music from text descriptions using Meta MusicGen.',
+        'Convert text to natural-sounding speech with Chatterbox TTS. High-quality voice synthesis.',
       category: 'AUDIO',
       inputSchema: {
         type: 'object',
-        required: ['prompt'],
+        required: ['text'],
         properties: {
-          prompt: {
+          text: {
             type: 'string',
-            title: 'Description',
-            description: 'Describe the music you want to generate',
+            title: 'Text',
+            description: 'The text to convert to speech',
             minLength: 1,
-            maxLength: 500,
+            maxLength: 5000,
           },
-          melody: {
+          voice: {
             type: 'string',
-            format: 'uri',
-            title: 'Melody Reference',
-            description: 'Optional audio file to use as melody reference',
+            title: 'Voice',
+            description: 'Voice style to use',
+            enum: ['default', 'male', 'female', 'neutral'],
+            default: 'default',
           },
-          duration: {
-            type: 'integer',
-            title: 'Duration',
-            description: 'Length in seconds',
-            default: 8,
-            minimum: 5,
-            maximum: 30,
-          },
-          temperature: {
+          speed: {
             type: 'number',
-            title: 'Temperature',
+            title: 'Speed',
+            description: 'Speech speed multiplier (0.5-2.0)',
             default: 1.0,
             minimum: 0.5,
-            maximum: 1.5,
-          },
-          top_k: {
-            type: 'integer',
-            title: 'Top K',
-            description: 'Sampling parameter',
-            default: 250,
-            minimum: 50,
-            maximum: 500,
+            maximum: 2.0,
           },
         },
       },
       outputType: 'AUDIO',
-      outputFormat: 'wav',
-      estimatedSeconds: 45,
+      outputFormat: 'mp3',
+      estimatedSeconds: 10,
       isActive: true,
     },
   });
 
-  console.log(`  ✓ Created ${6} base models`);
+  console.log(`  ✓ Created 4 base models`);
 
   // ============================================
   // SUMMARY
   // ============================================
 
-  const endpointCount = await prisma.runpodEndpoint.count();
-  const baseModelCount = await prisma.baseModel.count();
+  const endpointCount = await prisma.runpodEndpoint.count({
+    where: { isActive: true },
+  });
+  const baseModelCount = await prisma.baseModel.count({
+    where: { isActive: true },
+  });
 
   console.log('\n✅ Seed completed!');
-  console.log(`   📡 RunPod Endpoints: ${endpointCount}`);
-  console.log(`   🧠 Base Models: ${baseModelCount}`);
+  console.log(`   📡 Active RunPod Endpoints: ${endpointCount}`);
+  console.log(`   🧠 Active Base Models: ${baseModelCount}`);
+  console.log(
+    '\n⚠️  REMINDER: RunPod endpoint IDs are internal. Never expose to frontend.'
+  );
 }
 
 main()

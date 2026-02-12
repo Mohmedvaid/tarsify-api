@@ -231,6 +231,119 @@ gcloud secrets list --project=tarsify-studio
 echo -n "NEW_VALUE" | gcloud secrets versions add SECRET_NAME --data-file=- --project=tarsify-studio
 ```
 
+---
+
+## API Backend Infrastructure (tarsify-dev)
+
+The API backend is deployed to a **separate GCP project** from the frontend.
+
+### GCP Projects
+
+| Project ID       | Name           | Purpose                                         |
+| ---------------- | -------------- | ----------------------------------------------- |
+| `tarsify-dev`    | Tarsify Dev    | **API backend** (Cloud Run, Cloud SQL, Secrets) |
+| `tarsify-studio` | tarsify-studio | Frontend (Firebase App Hosting)                 |
+
+### Cloud Run Service
+
+| Property     | Value                                         |
+| ------------ | --------------------------------------------- |
+| Service Name | `tarsify-api`                                 |
+| Project      | `tarsify-dev`                                 |
+| Region       | `us-central1`                                 |
+| URL          | `https://tarsify-api-rbpbrcyq6q-uc.a.run.app` |
+
+### Cloud SQL Database
+
+| Property        | Value                                                      |
+| --------------- | ---------------------------------------------------------- |
+| Instance Name   | `tarsify-db`                                               |
+| Type            | PostgreSQL 15                                              |
+| Region          | `us-central1`                                              |
+| Connection Name | `tarsify-dev:us-central1:tarsify-db`                       |
+| Public IP       | Enabled (but no authorized networks - use Cloud SQL Proxy) |
+
+### GCP Secret Manager (tarsify-dev)
+
+| Secret Name                  | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| `DATABASE_URL`               | PostgreSQL connection string             |
+| `FIREBASE_DEVS_PROJECT_ID`   | Developer Firebase project ID            |
+| `FIREBASE_DEVS_CLIENT_EMAIL` | Developer Firebase service account email |
+| `FIREBASE_DEVS_PRIVATE_KEY`  | Developer Firebase service account key   |
+| `RUNPOD_API_KEY`             | RunPod API key for GPU execution         |
+
+### GCS Buckets (tarsify-dev)
+
+| Bucket                  | Purpose                           |
+| ----------------------- | --------------------------------- |
+| `tarsify-dev-notebooks` | Jupyter notebook storage (legacy) |
+| `tarsify-dev-outputs`   | Execution output files            |
+
+### CI/CD Pipeline (GitHub Actions)
+
+The API uses GitHub Actions for CI/CD (not Firebase App Hosting):
+
+1. **Lint & Type Check** - ESLint + TypeScript
+2. **Test & Coverage** - Vitest with 80% threshold
+3. **Security Audit** - npm audit
+4. **Build** - Docker image pushed to Artifact Registry
+5. **Deploy** - Cloud Run deployment with secrets mounted
+6. **Seed** - Database seeded via Cloud SQL Proxy
+
+Secrets mounted from Secret Manager at deploy time:
+
+- `DATABASE_URL`
+- `FIREBASE_DEVS_*` (3 secrets)
+- `RUNPOD_API_KEY`
+
+### Database Seeding
+
+Database seeding runs **automatically** as part of the CI/CD pipeline after deployment. The pipeline:
+
+1. Starts Cloud SQL Proxy
+2. Retrieves DATABASE_URL from Secret Manager
+3. Runs `npx prisma db seed`
+
+To seed manually (if needed), use Cloud Shell:
+
+```bash
+# Open: https://console.cloud.google.com/cloudshell?project=tarsify-dev
+git clone https://github.com/YOUR_ORG/tarsify-api.git && cd tarsify-api
+npm ci
+export DATABASE_URL=$(gcloud secrets versions access latest --secret=DATABASE_URL)
+npx prisma generate && npx prisma db seed
+```
+
+### Managing API Secrets
+
+```bash
+# List secrets
+gcloud secrets list --project=tarsify-dev
+
+# View secret value (careful!)
+gcloud secrets versions access latest --secret=SECRET_NAME --project=tarsify-dev
+
+# Add/update secret value
+echo -n "NEW_VALUE" | gcloud secrets versions add SECRET_NAME --data-file=- --project=tarsify-dev
+
+# Create new secret
+echo -n "VALUE" | gcloud secrets create NEW_SECRET --data-file=- --replication-policy=automatic --project=tarsify-dev
+```
+
+### Viewing API Logs
+
+```bash
+# Recent logs
+gcloud run logs read --project=tarsify-dev --region=us-central1 --service=tarsify-api
+
+# Tail logs
+gcloud run logs tail --project=tarsify-dev --region=us-central1 --service=tarsify-api
+```
+
+Or view in Cloud Console:
+https://console.cloud.google.com/run/detail/us-central1/tarsify-api/logs?project=tarsify-dev
+
 ## Security
 
 - All sensitive values stored in GCP Secret Manager

@@ -347,14 +347,15 @@ FIREBASE_DEVS_CLIENT_EMAIL=
 RUNPOD_API_KEY=
 ADMIN_UIDS=your_firebase_uid
 
-# GCP
-GCP_PROJECT_ID=tarsify-studio
-GCS_NOTEBOOKS_BUCKET=tarsify-studio-notebooks
+# GCP (API Backend)
+GCP_PROJECT_ID=tarsify-dev
+GCS_NOTEBOOKS_BUCKET=tarsify-dev-notebooks
+GCS_OUTPUTS_BUCKET=tarsify-dev-outputs
 
 # RunPod Endpoint IDs (for seeding)
 RUNPOD_EP_TTS=9ib1e8vvtjxrwh
-RUNPOD_EP_SDXL=
-RUNPOD_EP_WHISPER=
+RUNPOD_EP_SDXL=qr7wla851k3zrz
+RUNPOD_EP_WHISPER=352hhvj1y6v8f6
 RUNPOD_EP_VLLM=
 ```
 

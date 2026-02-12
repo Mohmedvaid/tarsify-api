@@ -25,9 +25,10 @@ export const slugSchema = z
   .string()
   .min(1, 'Slug is required')
   .max(200, 'Slug must be 200 characters or less')
-  .regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    'Slug must be lowercase alphanumeric with hyphens'
+  .transform((val) => val.toLowerCase().trim()) // Normalize to lowercase
+  .refine(
+    (val) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(val),
+    'Slug must be alphanumeric with hyphens (no spaces, no special characters)'
   );
 
 export const descriptionSchema = z

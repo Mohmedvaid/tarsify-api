@@ -170,6 +170,15 @@ jobs:
     environment: dev
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -207,6 +216,31 @@ jobs:
             FIREBASE_DEVS_PROJECT_ID=FIREBASE_DEVS_PROJECT_ID:latest
             FIREBASE_DEVS_CLIENT_EMAIL=FIREBASE_DEVS_CLIENT_EMAIL:latest
             FIREBASE_DEVS_PRIVATE_KEY=FIREBASE_DEVS_PRIVATE_KEY:latest
+            RUNPOD_API_KEY=RUNPOD_API_KEY:latest
+
+      - name: Seed database
+        run: |
+          echo "🌱 Seeding database..."
+
+          # Install Cloud SQL Proxy
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+          # Start proxy in background
+          ./cloud-sql-proxy --port 5432 ${{ secrets.GCP_PROJECT_ID }}:us-central1:tarsify-db &
+          sleep 5
+
+          # Get the database URL and replace host with localhost
+          DB_URL=$(gcloud secrets versions access latest --secret=DATABASE_URL --project=${{ secrets.GCP_PROJECT_ID }})
+          # Replace the Cloud SQL socket path with localhost:5432
+          export DATABASE_URL=$(echo "$DB_URL" | sed 's|@/cloudsql/[^?]*|@localhost:5432|')
+
+          # Install deps and seed
+          npm ci --ignore-scripts
+          npx prisma generate
+          npx prisma db seed
+
+          echo "✅ Database seeded!"
 
       - name: Run smoke tests
         run: |

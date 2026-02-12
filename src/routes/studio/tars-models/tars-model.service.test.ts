@@ -95,8 +95,8 @@ describe('TarsModel Service', () => {
         prisma.baseModel.findUnique as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce(mockBaseModel);
       (
-        prisma.tarsModel.findUnique as ReturnType<typeof vi.fn>
-      ).mockResolvedValueOnce(null);
+        prisma.tarsModel.findFirst as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(null); // No existing slug
       (
         prisma.tarsModel.create as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce({
@@ -147,12 +147,37 @@ describe('TarsModel Service', () => {
         prisma.baseModel.findUnique as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce(mockBaseModel);
       (
-        prisma.tarsModel.findUnique as ReturnType<typeof vi.fn>
+        prisma.tarsModel.findFirst as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce({ id: 'existing' });
 
       await expect(
         createTarsModel(TEST_DEVELOPER_ID, validInput)
       ).rejects.toThrow(ConflictError);
+    });
+
+    it('should perform case-insensitive slug uniqueness check', async () => {
+      // Simulate another model with same slug but different case
+      (
+        prisma.baseModel.findUnique as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(mockBaseModel);
+      (
+        prisma.tarsModel.findFirst as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce({ id: 'existing-with-different-case' });
+
+      await expect(
+        createTarsModel(TEST_DEVELOPER_ID, validInput)
+      ).rejects.toThrow(ConflictError);
+
+      // Verify findFirst was called with case-insensitive mode
+      expect(prisma.tarsModel.findFirst).toHaveBeenCalledWith({
+        where: {
+          slug: {
+            equals: validInput.slug,
+            mode: 'insensitive',
+          },
+        },
+        select: { id: true },
+      });
     });
 
     it('should create with configOverrides', async () => {
@@ -165,8 +190,8 @@ describe('TarsModel Service', () => {
         prisma.baseModel.findUnique as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce(mockBaseModel);
       (
-        prisma.tarsModel.findUnique as ReturnType<typeof vi.fn>
-      ).mockResolvedValueOnce(null);
+        prisma.tarsModel.findFirst as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(null); // No existing slug
       (
         prisma.tarsModel.create as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce({
@@ -196,8 +221,8 @@ describe('TarsModel Service', () => {
         prisma.baseModel.findUnique as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce(mockBaseModel);
       (
-        prisma.tarsModel.findUnique as ReturnType<typeof vi.fn>
-      ).mockResolvedValueOnce(null);
+        prisma.tarsModel.findFirst as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(null); // No existing slug
       (
         prisma.tarsModel.create as ReturnType<typeof vi.fn>
       ).mockResolvedValueOnce(mockTarsModel);

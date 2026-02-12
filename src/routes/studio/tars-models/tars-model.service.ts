@@ -81,9 +81,14 @@ export async function createTarsModel(
     );
   }
 
-  // Check for slug uniqueness
-  const existingSlug = await prisma.tarsModel.findUnique({
-    where: { slug: input.slug },
+  // Check for slug uniqueness (case-insensitive)
+  const existingSlug = await prisma.tarsModel.findFirst({
+    where: {
+      slug: {
+        equals: input.slug,
+        mode: 'insensitive',
+      },
+    },
     select: { id: true },
   });
 
@@ -187,11 +192,14 @@ export async function updateTarsModel(
     throw new NotFoundError('Tars model not found');
   }
 
-  // Check slug uniqueness if changing
+  // Check slug uniqueness if changing (case-insensitive)
   if (input.slug) {
     const existingSlug = await prisma.tarsModel.findFirst({
       where: {
-        slug: input.slug,
+        slug: {
+          equals: input.slug,
+          mode: 'insensitive',
+        },
         id: { not: tarsModelId },
       },
       select: { id: true },

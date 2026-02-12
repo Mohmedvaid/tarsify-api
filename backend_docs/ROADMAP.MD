@@ -51,13 +51,18 @@
 
 ## Phase 4: Deploy & Test with Real RunPod ← CURRENT
 
-- [ ] Deploy SDXL endpoint on RunPod Hub
-- [ ] Deploy Faster Whisper endpoint on RunPod Hub
-- [ ] Deploy vLLM endpoint on RunPod Hub
-- [ ] Seed all base models with real endpoint IDs
-- [ ] End-to-end test: admin seed → developer publish → consumer run → get result
-- [ ] Deploy to Cloud Run (staging)
-- [ ] Configure Secret Manager with RunPod API key
+> **Security Note:** RunPod endpoint IDs are internal and never exposed to frontend.
+> Consumers interact via TarsModel slugs. Engine maps internally.
+
+- [x] Deploy SDXL endpoint on RunPod Hub (`qr7wla851k3zrz`)
+- [x] Deploy Chatterbox TTS endpoint on RunPod Hub (`9ib1e8vvtjxrwh`)
+- [x] Deploy Faster Whisper endpoint on RunPod Hub (`352hhvj1y6v8f6`)
+- [x] Deploy to Cloud Run (production)
+- [x] Configure CI/CD with GitHub Actions
+- [x] Update seed script with real endpoint IDs
+- [ ] Add RUNPOD_API_KEY to GCP Secret Manager
+- [ ] Seed production database
+- [ ] End-to-end test: developer publish → consumer run → get result
 
 ## Phase 5: Studio Frontend — Tars Models
 
@@ -121,3 +126,5 @@
 | 2026-02-12 | 80%+ test coverage requirement                    | Code quality, regression prevention      |
 | 2026-02-12 | Husky + lint-staged for git hooks                 | Pre-commit lint, pre-push tests          |
 | 2026-02-12 | GitHub Actions CI/CD                              | Automated lint, test, build, deploy      |
+| 2026-02-12 | RunPod endpoint IDs internal only                 | Never expose to frontend, use TarsModel slugs |
+| 2026-02-12 | Seed script for DB setup (no admin UI needed)     | Faster MVP, admin UI can come later      |
