@@ -6,6 +6,7 @@
 import type { FastifyInstance } from 'fastify';
 import { endpointRoutes } from './endpoints';
 import { baseModelRoutes } from './base-models';
+import { initRoutes } from './init';
 
 /**
  * Register all admin routes
@@ -16,4 +17,7 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Register base model management routes
   await fastify.register(baseModelRoutes, { prefix: '/base-models' });
+
+  // TEMP: Register init routes (uses SUPER_ADMIN_TOKEN, remove after seeding)
+  await fastify.register(initRoutes, { prefix: '/init' });
 }

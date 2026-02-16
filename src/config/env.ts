@@ -66,6 +66,9 @@ const envSchema = z.object({
     )
     .default(''),
 
+  // Super Admin Token (TEMP: for initial platform setup, remove after seeding)
+  SUPER_ADMIN_TOKEN: z.string().optional(),
+
   // Security
   // CORS_ORIGINS uses pipe (|) delimiter to avoid conflicts with Cloud Run env var parsing
   CORS_ORIGINS: z
