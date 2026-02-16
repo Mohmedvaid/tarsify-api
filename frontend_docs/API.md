@@ -1,8 +1,19 @@
 # Tarsify API Documentation
 
-> Version: 1.1.0  
-> Base URL: `https://api.tarsify.com` (prod) | `http://localhost:8080` (dev)  
-> Last Updated: February 12, 2026
+> Version: 2.0.0  
+> Base URL: `https://tarsify-api-rbpbrcyq6q-uc.a.run.app` (prod) | `http://localhost:8080` (dev)  
+> Last Updated: February 16, 2026
+
+---
+
+## ⚠️ Major Update: Notebooks → Tars Models
+
+The platform has migrated from **Jupyter notebooks** to **Tars Models**. See [STUDIO_INTEGRATION.md](./STUDIO_INTEGRATION.md) for detailed migration guide.
+
+- **New:** `/api/studio/tars-models/*` — Developer model management
+- **New:** `/api/marketplace/models/*` — Consumer model browsing & execution
+- **Deprecated:** `/api/studio/notebooks/*` — Do not use
+- **Deprecated:** `/api/marketplace/notebooks/*` — Do not use
 
 ---
 
@@ -11,8 +22,9 @@
 | Section                 | Status         |
 | ----------------------- | -------------- |
 | Studio Auth             | ✅ Implemented |
-| Studio Notebooks        | ✅ Implemented |
+| Studio Notebooks        | ⚠️ Deprecated  |
 | Studio Tars Models      | ✅ Implemented |
+| Studio Base Models      | ✅ Implemented |
 | Studio Analytics        | 🔮 Future      |
 | Studio Earnings/Payouts | 🔮 Future      |
 | Marketplace Auth        | ⏳ Phase 4     |
@@ -22,7 +34,7 @@
 | Admin Endpoints         | ✅ Implemented |
 | Admin Base Models       | ✅ Implemented |
 
-> **Legend:** ✅ Implemented | ⏳ Planned | 🔮 Future
+> **Legend:** ✅ Implemented | ⏳ Planned | 🔮 Future | ⚠️ Deprecated
 
 ---
 
@@ -34,8 +46,9 @@
 4. [Rate Limiting](#rate-limiting)
 5. [Studio API (Developer)](#studio-api-developer) ✅
    - [Auth Endpoints](#auth-endpoints) ✅
-   - [Notebook Endpoints](#notebook-endpoints) ✅
+   - [Notebook Endpoints](#notebook-endpoints) ⚠️ Deprecated
    - [Tars Model Endpoints](#tars-model-endpoints) ✅
+   - [Base Models](#base-models) ✅
    - [Analytics Endpoints](#analytics-endpoints) 🔮
    - [Earnings Endpoints](#earnings-endpoints) 🔮
    - [Payout Endpoints](#payout-endpoints) 🔮
@@ -336,6 +349,10 @@ Complete developer profile (first-time setup after registration).
 ---
 
 ### Notebook Endpoints
+
+> ⚠️ **DEPRECATED** — Notebook endpoints are deprecated and will be removed.
+> Use [Tars Model Endpoints](#tars-model-endpoints) instead.
+> See [STUDIO_INTEGRATION.md](./STUDIO_INTEGRATION.md) for migration guide.
 
 #### `GET /notebooks`
 
