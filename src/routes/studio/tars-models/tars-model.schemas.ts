@@ -123,15 +123,6 @@ export const tarsModelResponseJsonSchema = {
 };
 
 export const tarsModelsListResponseJsonSchema = {
-  type: 'object',
-  properties: {
-    tarsModels: {
-      type: 'array',
-      items: tarsModelResponseJsonSchema,
-    },
-    total: { type: 'integer' },
-    page: { type: 'integer' },
-    limit: { type: 'integer' },
-    pages: { type: 'integer' },
-  },
+  type: 'array',
+  items: tarsModelResponseJsonSchema,
 };

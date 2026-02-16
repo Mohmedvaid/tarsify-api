@@ -13,10 +13,7 @@ import {
   publishHandler,
   listBaseModelsHandler,
 } from './tars-model.controller';
-import {
-  tarsModelResponseJsonSchema,
-  tarsModelsListResponseJsonSchema,
-} from './tars-model.schemas';
+import { tarsModelResponseJsonSchema } from './tars-model.schemas';
 
 /**
  * Success response wrapper schema
@@ -26,6 +23,29 @@ const wrapInSuccess = (dataSchema: object): object => ({
   properties: {
     success: { type: 'boolean', const: true },
     data: dataSchema,
+  },
+});
+
+/**
+ * Paginated success response wrapper schema
+ */
+const wrapInPaginatedSuccess = (itemSchema: object): object => ({
+  type: 'object',
+  properties: {
+    success: { type: 'boolean', const: true },
+    data: {
+      type: 'array',
+      items: itemSchema,
+    },
+    meta: {
+      type: 'object',
+      properties: {
+        page: { type: 'integer' },
+        limit: { type: 'integer' },
+        total: { type: 'integer' },
+        totalPages: { type: 'integer' },
+      },
+    },
   },
 });
 
@@ -151,7 +171,7 @@ export async function tarsModelRoutes(app: FastifyInstance): Promise<void> {
           },
         },
         response: {
-          200: wrapInSuccess(tarsModelsListResponseJsonSchema),
+          200: wrapInPaginatedSuccess(tarsModelResponseJsonSchema),
           401: errorResponseSchema,
         },
       },
