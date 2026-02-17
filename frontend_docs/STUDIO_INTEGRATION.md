@@ -77,6 +77,8 @@ The backend has **completely changed** from the notebook model to the **Tars Mod
 
 - [ ] View tars model detail page
 - [ ] Edit form: `PUT /api/studio/tars-models/:id`
+- [ ] **Test Run button**: `POST /api/studio/tars-models/:id/test-run` — validate model before publishing
+- [ ] Show test run results (output preview, execution time, errors)
 - [ ] Publish button: `POST /api/studio/tars-models/:id/publish` with `{ "action": "publish" }`
 - [ ] Archive button: `POST /api/studio/tars-models/:id/publish` with `{ "action": "archive" }`
 - [ ] Delete button (draft only): `DELETE /api/studio/tars-models/:id`
@@ -161,15 +163,16 @@ JSON object that customizes how the base model behaves:
 
 ### Tars Model Endpoints (New)
 
-| Method | Endpoint                              | Description                    |
-| ------ | ------------------------------------- | ------------------------------ |
-| GET    | `/api/studio/tars-models/base-models` | List available base models     |
-| GET    | `/api/studio/tars-models`             | List developer's tars models   |
-| POST   | `/api/studio/tars-models`             | Create new tars model          |
-| GET    | `/api/studio/tars-models/:id`         | Get tars model by ID           |
-| PUT    | `/api/studio/tars-models/:id`         | Update tars model              |
-| DELETE | `/api/studio/tars-models/:id`         | Delete tars model (draft only) |
-| POST   | `/api/studio/tars-models/:id/publish` | Publish or archive tars model  |
+| Method | Endpoint                               | Description                    |
+| ------ | -------------------------------------- | ------------------------------ |
+| GET    | `/api/studio/tars-models/base-models`  | List available base models     |
+| GET    | `/api/studio/tars-models`              | List developer's tars models   |
+| POST   | `/api/studio/tars-models`              | Create new tars model          |
+| GET    | `/api/studio/tars-models/:id`          | Get tars model by ID           |
+| PUT    | `/api/studio/tars-models/:id`          | Update tars model              |
+| DELETE | `/api/studio/tars-models/:id`          | Delete tars model (draft only) |
+| POST   | `/api/studio/tars-models/:id/publish`  | Publish or archive tars model  |
+| POST   | `/api/studio/tars-models/:id/test-run` | Test run model before publish  |
 
 ### Deprecated Endpoints (Remove from UI)
 
@@ -365,6 +368,49 @@ Content-Type: application/json
   "action": "archive"
 }
 ```
+
+### Test Run Tars Model
+
+Execute a test run to validate your model before publishing. This is a synchronous call that returns the result immediately (with ~30 second timeout).
+
+```http
+POST /api/studio/tars-models/:id/test-run
+Authorization: Bearer <firebase-token>
+Content-Type: application/json
+
+{
+  "inputs": {
+    "prompt": "A beautiful sunset over mountains",
+    "width": 512,
+    "height": 512
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "runpod-abc123",
+    "status": "COMPLETED",
+    "output": {
+      "image_url": "https://storage.googleapis.com/...",
+      "seed": 42
+    },
+    "error": null,
+    "executionTimeMs": 8500
+  }
+}
+```
+
+**Notes:**
+
+- Works on DRAFT and PUBLISHED models (not ARCHIVED)
+- No credits are deducted for test runs
+- Use to verify your `configOverrides` work correctly
+- Timeout is ~30 seconds for sync execution
 
 ---
 

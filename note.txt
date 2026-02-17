@@ -1,0 +1,1 @@
+fix empty object in prod when getting dev models in draft mode

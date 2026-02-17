@@ -8,6 +8,7 @@ import type {
   CreateTarsModelInput,
   UpdateTarsModelInput,
   ListTarsModelsQuery,
+  TestRunTarsModelInput,
 } from './tars-model.schemas';
 import {
   NotFoundError,
@@ -15,6 +16,11 @@ import {
   AppError,
   ERROR_CODES,
 } from '@/core/errors';
+import { RunPodClient } from '@/engine/runpod-client';
+import { mergeInputs } from '@/engine/input-merger';
+import { env } from '@/config/env';
+import { logger } from '@/lib/logger';
+import type { ConfigOverrides } from '@/engine/types';
 
 // ============================================
 // Prisma Include Configuration
@@ -28,6 +34,8 @@ const baseModelInclude = {
       name: true,
       category: true,
       outputType: true,
+      outputFormat: true,
+      inputSchema: true,
     },
   },
 } as const;
@@ -344,4 +352,128 @@ export async function listAvailableBaseModels() {
   });
 
   return baseModels;
+}
+
+// ============================================
+// Test Run Types
+// ============================================
+
+export interface TestRunResult {
+  jobId: string;
+  status: string;
+  output?: unknown;
+  error?: string | null;
+  executionTimeMs?: number | null;
+}
+
+// ============================================
+// Test Run Service
+// ============================================
+
+/**
+ * Run a test execution of a TarsModel
+ * Developer can test their model before publishing
+ * Uses sync RunPod call for immediate result
+ */
+export async function testRunTarsModel(
+  developerId: string,
+  tarsModelId: string,
+  input: TestRunTarsModelInput
+): Promise<TestRunResult> {
+  // Validate RUNPOD_API_KEY is configured
+  if (!env.RUNPOD_API_KEY) {
+    throw new AppError(
+      ERROR_CODES.INTERNAL_ERROR,
+      'RunPod API key not configured',
+      500
+    );
+  }
+
+  // Load tars model with base model and endpoint
+  const tarsModel = await prisma.tarsModel.findFirst({
+    where: {
+      id: tarsModelId,
+      developerId,
+    },
+    include: {
+      baseModel: {
+        include: {
+          endpoint: true,
+        },
+      },
+    },
+  });
+
+  if (!tarsModel) {
+    throw new NotFoundError('Tars model not found');
+  }
+
+  // Check status - allow DRAFT and PUBLISHED for testing
+  if (tarsModel.status === TarsModelStatus.ARCHIVED) {
+    throw new AppError(
+      ERROR_CODES.TARS_MODEL_INVALID_STATUS,
+      'Cannot test an archived model',
+      400
+    );
+  }
+
+  const { baseModel } = tarsModel;
+  const { endpoint } = baseModel;
+
+  if (!endpoint.isActive) {
+    throw new AppError(
+      ERROR_CODES.ENDPOINT_NOT_ACTIVE,
+      'Model endpoint is not active',
+      400
+    );
+  }
+
+  // Merge user inputs with developer config overrides
+  const configOverrides = tarsModel.configOverrides as ConfigOverrides | null;
+  const mergedInputs = mergeInputs(input.inputs, configOverrides);
+
+  logger.info({
+    msg: 'Starting test run',
+    tarsModelId,
+    developerId,
+    baseModelSlug: baseModel.slug,
+    endpointId: endpoint.runpodEndpointId,
+  });
+
+  // Create RunPod client and submit sync job
+  const runpodClient = new RunPodClient({ apiKey: env.RUNPOD_API_KEY });
+
+  try {
+    const result = await runpodClient.submitJobSync(
+      endpoint.runpodEndpointId,
+      mergedInputs
+    );
+
+    logger.info({
+      msg: 'Test run completed',
+      tarsModelId,
+      jobId: result.id,
+      status: result.status,
+    });
+
+    return {
+      jobId: result.id,
+      status: result.status,
+      output: result.output,
+      error: result.error ?? null,
+      executionTimeMs: result.executionTime ?? null,
+    };
+  } catch (error) {
+    logger.error({
+      msg: 'Test run failed',
+      tarsModelId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    throw new AppError(
+      ERROR_CODES.RUNPOD_ERROR,
+      `Test run failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
+    );
+  }
 }

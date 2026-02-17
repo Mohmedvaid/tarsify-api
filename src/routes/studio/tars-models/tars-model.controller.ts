@@ -13,6 +13,7 @@ import {
   updateTarsModelSchema,
   listTarsModelsQuerySchema,
   publishTarsModelSchema,
+  testRunTarsModelSchema,
 } from './tars-model.schemas';
 
 // ============================================
@@ -182,4 +183,35 @@ export async function listBaseModelsHandler(
   const baseModels = await tarsModelService.listAvailableBaseModels();
 
   createResponse(reply).success({ baseModels });
+}
+
+/**
+ * Test run a tars model
+ * POST /studio/tars-models/:id/test-run
+ * Developer validation run before publishing
+ */
+export async function testRunHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  const { developer } = request as DeveloperRequest;
+  const { id } = request.params as { id: string };
+
+  const parseResult = testRunTarsModelSchema.safeParse(request.body);
+  if (!parseResult.success) {
+    throw new AppError(
+      ERROR_CODES.VALIDATION_ERROR,
+      'Invalid request body',
+      400,
+      { errors: parseResult.error.flatten().fieldErrors }
+    );
+  }
+
+  const result = await tarsModelService.testRunTarsModel(
+    developer.id,
+    id,
+    parseResult.data
+  );
+
+  createResponse(reply).success(result);
 }

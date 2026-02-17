@@ -12,8 +12,12 @@ import {
   deleteHandler,
   publishHandler,
   listBaseModelsHandler,
+  testRunHandler,
 } from './tars-model.controller';
-import { tarsModelResponseJsonSchema } from './tars-model.schemas';
+import {
+  tarsModelResponseJsonSchema,
+  testRunResponseJsonSchema,
+} from './tars-model.schemas';
 
 /**
  * Success response wrapper schema
@@ -313,5 +317,48 @@ export async function tarsModelRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     publishHandler
+  );
+
+  /**
+   * POST /tars-models/:id/test-run
+   * Execute a test run of a tars model
+   * Developer validation run before publishing
+   */
+  app.post(
+    '/:id/test-run',
+    {
+      preHandler: [requireDeveloper],
+      schema: {
+        summary: 'Test run a tars model',
+        description:
+          'Execute a test run of a tars model. Returns immediately with result. Use this to validate your model before publishing.',
+        tags: ['Studio - Tars Models'],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+        body: {
+          type: 'object',
+          properties: {
+            inputs: {
+              type: 'object',
+              description: 'Input parameters for the model run',
+              additionalProperties: true,
+            },
+          },
+        },
+        response: {
+          200: wrapInSuccess(testRunResponseJsonSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          404: errorResponseSchema,
+          500: errorResponseSchema,
+        },
+      },
+    },
+    testRunHandler
   );
 }

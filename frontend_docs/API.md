@@ -24,6 +24,7 @@ The platform has migrated from **Jupyter notebooks** to **Tars Models**. See [ST
 | Studio Auth             | ✅ Implemented |
 | Studio Notebooks        | ⚠️ Deprecated  |
 | Studio Tars Models      | ✅ Implemented |
+| Studio Test Runs        | ✅ Implemented |
 | Studio Base Models      | ✅ Implemented |
 | Studio Analytics        | 🔮 Future      |
 | Studio Earnings/Payouts | 🔮 Future      |
@@ -952,6 +953,70 @@ Archive a Tars Model (remove from marketplace).
 **Errors:**
 
 - `ERR_5504` - Model already archived
+
+---
+
+#### `POST /tars-models/:id/test-run`
+
+Execute a test run of a Tars Model. Use this to validate your model configuration before publishing. The request is synchronous and returns the result immediately (with a ~30 second timeout).
+
+**Auth:** Required
+
+**Request Body:**
+
+```json
+{
+  "inputs": {
+    "prompt": "A beautiful sunset over mountains",
+    "width": 512,
+    "height": 512
+  }
+}
+```
+
+| Field    | Type   | Required | Description                                                                               |
+| -------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
+| `inputs` | object | No       | Input parameters matching the base model's inputSchema. Merged with your configOverrides. |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "runpod-job-id",
+    "status": "COMPLETED",
+    "output": {
+      "image_url": "https://...",
+      "seed": 12345
+    },
+    "error": null,
+    "executionTimeMs": 8500
+  }
+}
+```
+
+| Field             | Type    | Description                                                   |
+| ----------------- | ------- | ------------------------------------------------------------- |
+| `jobId`           | string  | RunPod job identifier                                         |
+| `status`          | string  | `COMPLETED`, `FAILED`, `TIMED_OUT`, `IN_PROGRESS`, `IN_QUEUE` |
+| `output`          | object  | Model output (if successful)                                  |
+| `error`           | string  | Error message (if failed)                                     |
+| `executionTimeMs` | integer | Execution time in milliseconds                                |
+
+**Errors:**
+
+- `ERR_4002` - Tars model not found
+- `ERR_5504` - Cannot test archived model
+- `ERR_6001` - Endpoint not active
+- `ERR_7000` - RunPod execution error
+
+**Usage Notes:**
+
+- Test runs are synchronous with ~30 second timeout
+- Test runs work on both DRAFT and PUBLISHED models
+- Test runs do NOT deduct credits (currently)
+- Use this before publishing to verify your configOverrides work correctly
 
 ---
 

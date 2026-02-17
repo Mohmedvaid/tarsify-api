@@ -91,6 +91,16 @@ export const publishTarsModelSchema = z.object({
 
 export type PublishTarsModelInput = z.infer<typeof publishTarsModelSchema>;
 
+/**
+ * Test run tars model request
+ * Developer validation run before publishing
+ */
+export const testRunTarsModelSchema = z.object({
+  inputs: z.record(z.unknown()).default({}),
+});
+
+export type TestRunTarsModelInput = z.infer<typeof testRunTarsModelSchema>;
+
 // ============================================
 // Response Schemas (for OpenAPI docs)
 // ============================================
@@ -117,6 +127,8 @@ export const tarsModelResponseJsonSchema = {
         name: { type: 'string' },
         category: { type: 'string' },
         outputType: { type: 'string' },
+        outputFormat: { type: 'string', nullable: true },
+        inputSchema: { type: 'object', nullable: true },
       },
     },
   },
@@ -125,4 +137,21 @@ export const tarsModelResponseJsonSchema = {
 export const tarsModelsListResponseJsonSchema = {
   type: 'array',
   items: tarsModelResponseJsonSchema,
+};
+
+/**
+ * Test run response JSON schema
+ */
+export const testRunResponseJsonSchema = {
+  type: 'object',
+  properties: {
+    jobId: { type: 'string' },
+    status: {
+      type: 'string',
+      enum: ['COMPLETED', 'FAILED', 'TIMED_OUT', 'IN_PROGRESS', 'IN_QUEUE'],
+    },
+    output: { type: 'object', nullable: true },
+    error: { type: 'string', nullable: true },
+    executionTimeMs: { type: 'integer', nullable: true },
+  },
 };
